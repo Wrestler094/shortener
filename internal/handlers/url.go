@@ -23,9 +23,9 @@ func generateShortID() (string, error) {
 }
 
 // Temporary handler
-func UrlHandler(res http.ResponseWriter, req *http.Request) {
+func URLHandler(res http.ResponseWriter, req *http.Request) {
 	if req.URL.Path == "/" && req.Method == http.MethodPost {
-		SaveUrl(res, req)
+		SaveURL(res, req)
 		return
 	}
 
@@ -38,14 +38,14 @@ func UrlHandler(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		GetUrl(res, req, urlParts[0])
+		GetURL(res, req, urlParts[0])
 		return
 	}
 
 	http.Error(res, "Bad Request", http.StatusBadRequest)
 }
 
-func SaveUrl(res http.ResponseWriter, req *http.Request) {
+func SaveURL(res http.ResponseWriter, req *http.Request) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil || len(body) == 0 {
 		http.Error(res, "Invalid request body", http.StatusBadRequest)
@@ -71,7 +71,7 @@ func SaveUrl(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte(ServerAddr + shortID))
 }
 
-func GetUrl(res http.ResponseWriter, _ *http.Request, id string) {
+func GetURL(res http.ResponseWriter, _ *http.Request, id string) {
 	url, ok := storage.Get(id)
 	if !ok {
 		http.Error(res, "Shorten URL not found", http.StatusBadRequest)

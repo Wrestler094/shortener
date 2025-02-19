@@ -3,20 +3,20 @@ package storage
 import "sync"
 
 var (
-	// map[ShortenUrl]Url
+	// map[shortenURL]URL
 	storage = make(map[string]string)
 	mu      sync.RWMutex
 )
 
-func Save(shortenUrl string, url string) {
+func Save(shortenURL string, url string) {
 	mu.Lock()
-	storage[shortenUrl] = url
+	storage[shortenURL] = url
 	mu.Unlock()
 }
 
-func Get(shortenUrl string) (string, bool) {
+func Get(shortenURL string) (string, bool) {
 	mu.RLock()
-	url, ok := storage[shortenUrl]
+	url, ok := storage[shortenURL]
 	mu.RUnlock()
 	return url, ok
 }
