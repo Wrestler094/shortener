@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestStatusHandler(t *testing.T) {
+func TestSaveURL(t *testing.T) {
 	type want struct {
 		code        int
 		contentType string
@@ -45,7 +45,7 @@ func TestStatusHandler(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/", body)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			URLHandler(w, request)
+			SaveURL(w, request)
 
 			res := w.Result()
 			// проверяем код ответа
@@ -56,6 +56,42 @@ func TestStatusHandler(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.NotEqual(t, "", string(resBody))
+			assert.Contains(t, res.Header.Get("Content-Type"), test.want.contentType)
+		})
+	}
+}
+
+func TestGetURL(t *testing.T) {
+	type want struct {
+		code        int
+		contentType string
+	}
+
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "negative test #1",
+			want: want{
+				code:        400,
+				contentType: "text/plain",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodPost, "/test", nil)
+			// создаём новый Recorder
+			w := httptest.NewRecorder()
+			GetURL(w, request)
+
+			res := w.Result()
+			// проверяем код ответа
+			assert.Equal(t, test.want.code, res.StatusCode)
+			// получаем и проверяем тело запроса
+			defer res.Body.Close()
 			assert.Contains(t, res.Header.Get("Content-Type"), test.want.contentType)
 		})
 	}
