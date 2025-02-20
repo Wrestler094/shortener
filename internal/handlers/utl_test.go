@@ -1,0 +1,62 @@
+package handlers
+
+import (
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+)
+
+func TestStatusHandler(t *testing.T) {
+	type want struct {
+		code        int
+		contentType string
+		bodyContent string
+	}
+
+	tests := []struct {
+		name string
+		want want
+	}{
+		{
+			name: "positive test #1",
+			want: want{
+				code:        201,
+				contentType: "text/plain",
+				bodyContent: "http://yandex.ru",
+			},
+		},
+		{
+			name: "negative test #1",
+			want: want{
+				code:        400,
+				contentType: "text/plain",
+				bodyContent: "yandex.ru",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			body := strings.NewReader(test.want.bodyContent)
+			request := httptest.NewRequest(http.MethodPost, "/", body)
+			// создаём новый Recorder
+			w := httptest.NewRecorder()
+			URLHandler(w, request)
+
+			res := w.Result()
+			// проверяем код ответа
+			assert.Equal(t, test.want.code, res.StatusCode)
+			// получаем и проверяем тело запроса
+			defer res.Body.Close()
+			resBody, err := io.ReadAll(res.Body)
+
+			require.NoError(t, err)
+			assert.NotEqual(t, "", string(resBody))
+			assert.Contains(t, res.Header.Get("Content-Type"), test.want.contentType)
+		})
+	}
+}
