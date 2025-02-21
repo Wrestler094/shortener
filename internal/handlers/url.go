@@ -33,7 +33,7 @@ func SaveURL(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("content-type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
-	res.Write([]byte(configs.ServerAddr + shortID))
+	res.Write([]byte(configs.FlagBaseAddr + "/" + shortID))
 }
 
 func GetURL(res http.ResponseWriter, req *http.Request) {

@@ -1,6 +1,9 @@
 package main
 
 import (
+	"flag"
+	"fmt"
+	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/handlers"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -8,7 +11,13 @@ import (
 	"net/http"
 )
 
-func main() {
+func parseFlags() {
+	flag.StringVar(&configs.FlagRunAddr, "a", ":8080", "address and port to run server")
+	flag.StringVar(&configs.FlagBaseAddr, "b", "http://localhost:8080", "basic address and port of result url")
+	flag.Parse()
+}
+
+func registerRouter() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Logger)
@@ -17,5 +26,13 @@ func main() {
 	r.Post("/", handlers.SaveURL)
 	r.Get("/{id}", handlers.GetURL)
 
-	log.Fatal(http.ListenAndServe(":8080", r))
+	return r
+}
+
+func main() {
+	parseFlags()
+	router := registerRouter()
+
+	fmt.Println("Running server on", configs.FlagRunAddr)
+	log.Fatal(http.ListenAndServe(configs.FlagRunAddr, router))
 }
