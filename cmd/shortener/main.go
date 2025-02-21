@@ -9,12 +9,22 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
+	"os"
 )
 
 func parseFlags() {
 	flag.StringVar(&configs.FlagRunAddr, "a", ":8080", "address and port to run server")
 	flag.StringVar(&configs.FlagBaseAddr, "b", "http://localhost:8080", "basic address and port of result url")
 	flag.Parse()
+}
+
+func parseEnv() {
+	if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
+		configs.FlagRunAddr = envRunAddr
+	}
+	if envRunAddr := os.Getenv("BASE_URL"); envRunAddr != "" {
+		configs.FlagBaseAddr = envRunAddr
+	}
 }
 
 func registerRouter() http.Handler {
@@ -31,6 +41,7 @@ func registerRouter() http.Handler {
 
 func main() {
 	parseFlags()
+	parseEnv()
 	router := registerRouter()
 
 	fmt.Println("Running server on", configs.FlagRunAddr)
