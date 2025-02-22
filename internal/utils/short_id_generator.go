@@ -3,6 +3,7 @@ package utils
 import (
 	"crypto/rand"
 	"encoding/base64"
+
 	"github.com/Wrestler094/shortener/internal/configs"
 )
 
