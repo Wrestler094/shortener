@@ -1,12 +1,13 @@
 package handlers
 
 import (
-	"github.com/Wrestler094/shortener/internal/configs"
-	"github.com/Wrestler094/shortener/internal/storage"
-	"github.com/Wrestler094/shortener/internal/utils"
 	"io"
 	"net/http"
 	"strings"
+
+	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/storage"
+	"github.com/Wrestler094/shortener/internal/utils"
 )
 
 func SaveURL(res http.ResponseWriter, req *http.Request) {

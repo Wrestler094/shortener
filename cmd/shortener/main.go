@@ -1,36 +1,23 @@
 package main
 
 import (
-	"flag"
-	"fmt"
-	"github.com/Wrestler094/shortener/internal/configs"
-	"github.com/Wrestler094/shortener/internal/handlers"
-	"github.com/go-chi/chi/v5"
+	"github.com/Wrestler094/shortener/internal/middlewares"
 	"github.com/go-chi/chi/v5/middleware"
 	"log"
 	"net/http"
-	"os"
+
+	"github.com/go-chi/chi/v5"
+	"go.uber.org/zap"
+
+	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/handlers"
+	"github.com/Wrestler094/shortener/internal/logger"
 )
-
-func parseFlags() {
-	flag.StringVar(&configs.FlagRunAddr, "a", ":8080", "address and port to run server")
-	flag.StringVar(&configs.FlagBaseAddr, "b", "http://localhost:8080", "basic address and port of result url")
-	flag.Parse()
-}
-
-func parseEnv() {
-	if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
-		configs.FlagRunAddr = envRunAddr
-	}
-	if envRunAddr := os.Getenv("BASE_URL"); envRunAddr != "" {
-		configs.FlagBaseAddr = envRunAddr
-	}
-}
 
 func registerRouter() http.Handler {
 	r := chi.NewRouter()
 
-	r.Use(middleware.Logger)
+	r.Use(middlewares.RequestLogger)
 	r.Use(middleware.Recoverer)
 
 	r.Post("/", handlers.SaveURL)
@@ -40,10 +27,15 @@ func registerRouter() http.Handler {
 }
 
 func main() {
-	parseFlags()
-	parseEnv()
+	configs.ParseFlags()
+	configs.ParseEnv()
+
+	if err := logger.Initialize(configs.LoggerLevel); err != nil {
+		log.Fatal(err)
+	}
+
 	router := registerRouter()
 
-	fmt.Println("Running server on", configs.FlagRunAddr)
-	log.Fatal(http.ListenAndServe(configs.FlagRunAddr, router))
+	logger.Log.Info("Running server", zap.String("address", configs.FlagRunAddr))
+	logger.Log.Fatal("Server crashed", zap.Error(http.ListenAndServe(configs.FlagRunAddr, router)))
 }
