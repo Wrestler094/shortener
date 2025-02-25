@@ -20,8 +20,9 @@ func registerRouter() http.Handler {
 	r.Use(middlewares.RequestLogger)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/", handlers.SaveURL)
+	r.Post("/", handlers.SavePlainURL)
 	r.Get("/{id}", handlers.GetURL)
+	r.Post("/api/shorten", handlers.SaveJsonURL)
 
 	return r
 }
