@@ -22,7 +22,7 @@ func registerRouter() http.Handler {
 
 	r.Post("/", handlers.SavePlainURL)
 	r.Get("/{id}", handlers.GetURL)
-	r.Post("/api/shorten", handlers.SaveJsonURL)
+	r.Post("/api/shorten", handlers.SaveJSONURL)
 
 	return r
 }

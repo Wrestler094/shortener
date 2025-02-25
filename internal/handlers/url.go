@@ -19,7 +19,7 @@ type ShortenResponse struct {
 	Result string `json:"result"`
 }
 
-func SaveJsonURL(res http.ResponseWriter, req *http.Request) {
+func SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	var shortenRequest ShortenRequest
 
 	err := json.NewDecoder(req.Body).Decode(&shortenRequest)

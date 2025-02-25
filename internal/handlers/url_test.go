@@ -62,7 +62,7 @@ func TestSavePlainURL(t *testing.T) {
 	}
 }
 
-func TestSaveJsonURL(t *testing.T) {
+func TestSaveJSONURL(t *testing.T) {
 	type want struct {
 		code        int
 		contentType string
@@ -97,7 +97,7 @@ func TestSaveJsonURL(t *testing.T) {
 			request := httptest.NewRequest(http.MethodPost, "/api/shorten", body)
 			// создаём новый Recorder
 			w := httptest.NewRecorder()
-			SaveJsonURL(w, request)
+			SaveJSONURL(w, request)
 
 			res := w.Result()
 			// проверяем код ответа
