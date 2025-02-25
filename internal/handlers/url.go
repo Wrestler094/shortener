@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"encoding/json"
+	"github.com/mailru/easyjson"
 	"io"
 	"net/http"
 	"strings"
@@ -11,10 +11,12 @@ import (
 	"github.com/Wrestler094/shortener/internal/storage"
 )
 
+//easyjson:json
 type ShortenRequest struct {
 	URL string `json:"url"`
 }
 
+//easyjson:json
 type ShortenResponse struct {
 	Result string `json:"result"`
 }
@@ -22,22 +24,33 @@ type ShortenResponse struct {
 func SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	var shortenRequest ShortenRequest
 
-	err := json.NewDecoder(req.Body).Decode(&shortenRequest)
+	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		http.Error(res, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if err := easyjson.Unmarshal(body, &shortenRequest); err != nil {
+		http.Error(res, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
 
 	shortID, err := services.SaveURL(shortenRequest.URL)
 	if err != nil {
 		http.Error(res, err.Error(), http.StatusBadRequest)
+		return
 	}
 
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
-	json.NewEncoder(res).Encode(ShortenResponse{
+	responseBody, err := easyjson.Marshal(ShortenResponse{
 		Result: configs.FlagBaseAddr + "/" + shortID,
 	})
+	if err != nil {
+		http.Error(res, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+	res.Write(responseBody)
 }
 
 func SavePlainURL(res http.ResponseWriter, req *http.Request) {
