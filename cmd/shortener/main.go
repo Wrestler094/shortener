@@ -18,6 +18,7 @@ func registerRouter() http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middlewares.RequestLogger)
+	r.Use(middlewares.Compressor)
 	r.Use(middleware.Recoverer)
 
 	r.Post("/", handlers.SavePlainURL)
