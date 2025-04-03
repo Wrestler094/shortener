@@ -4,7 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Wrestler094/shortener/internal/storage"
+	"github.com/Wrestler094/shortener/internal/storage/file"
+	"github.com/Wrestler094/shortener/internal/storage/memory"
 	"github.com/Wrestler094/shortener/internal/utils"
 )
 
@@ -21,6 +22,8 @@ func SaveURL(url string) (string, error) {
 	}
 
 	// TODO: Сделать првоерку на случай если id или URL уже существует
-	storage.Save(shortID, originalURL)
+	memory.Save(shortID, originalURL)
+	file.SaveURL(shortID, originalURL)
+
 	return shortID, nil
 }
