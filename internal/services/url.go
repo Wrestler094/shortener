@@ -23,7 +23,7 @@ func SaveURL(url string) (string, error) {
 
 	// TODO: Сделать првоерку на случай если id или URL уже существует
 	memory.Save(shortID, originalURL)
-	file.SaveUrl(shortID, originalURL)
+	file.SaveURL(shortID, originalURL)
 
 	return shortID, nil
 }

@@ -18,12 +18,12 @@ var (
 	mu sync.Mutex
 )
 
-type UrlEntry struct {
+type URLEntry struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
-func SaveUrl(shortURL string, originalURL string) {
+func SaveURL(shortURL string, originalURL string) {
 	mu.Lock()
 	defer mu.Unlock()
 
@@ -63,7 +63,7 @@ func RecoverURLs() {
 	for scanner.Scan() {
 		line := scanner.Text()
 
-		var entry UrlEntry
+		var entry URLEntry
 		if err := json.Unmarshal([]byte(line), &entry); err != nil {
 			logger.Log.Error("Error of reading url from file", zap.Error(err))
 			continue
