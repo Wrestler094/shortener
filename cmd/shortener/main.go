@@ -13,6 +13,7 @@ import (
 	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/middlewares"
 	"github.com/Wrestler094/shortener/internal/storage/file"
+	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
 
 func registerRouter() http.Handler {
@@ -26,6 +27,8 @@ func registerRouter() http.Handler {
 	r.Get("/{id}", handlers.GetURL)
 	r.Post("/api/shorten", handlers.SaveJSONURL)
 
+	r.Get("/ping", handlers.HandlePing)
+
 	return r
 }
 
@@ -34,6 +37,10 @@ func main() {
 	configs.ParseEnv()
 
 	if err := logger.Initialize(configs.LoggerLevel); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := postgres.InitPostgres(configs.FlagDatabaseDSN); err != nil {
 		log.Fatal(err)
 	}
 
