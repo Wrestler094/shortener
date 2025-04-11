@@ -3,6 +3,7 @@ package postgres
 import (
 	"database/sql"
 	"fmt"
+	"github.com/Wrestler094/shortener/internal/configs"
 	"log"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -11,6 +12,10 @@ import (
 var DB *sql.DB
 
 func InitPostgres(dsn string) error {
+	if configs.FlagDatabaseDSN == "" {
+		return nil
+	}
+
 	var err error
 
 	DB, err = sql.Open("pgx", dsn)

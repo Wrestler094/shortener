@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Wrestler094/shortener/internal/storage/postgres"
 	"log"
 	"net/http"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/middlewares"
 	"github.com/Wrestler094/shortener/internal/storage/file"
-	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
 
 func registerRouter() http.Handler {
