@@ -1,36 +1,19 @@
 package main
 
 import (
-	"github.com/Wrestler094/shortener/internal/storage/postgres"
+	"github.com/Wrestler094/shortener/internal/router"
 	"log"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"go.uber.org/zap"
 
 	"github.com/Wrestler094/shortener/internal/configs"
-	"github.com/Wrestler094/shortener/internal/handlers"
 	"github.com/Wrestler094/shortener/internal/logger"
-	"github.com/Wrestler094/shortener/internal/middlewares"
 	"github.com/Wrestler094/shortener/internal/storage/file"
+	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
-
-func registerRouter() http.Handler {
-	r := chi.NewRouter()
-
-	r.Use(middlewares.RequestLogger)
-	r.Use(middlewares.Compressor)
-	r.Use(middleware.Recoverer)
-
-	r.Post("/", handlers.SavePlainURL)
-	r.Get("/{id}", handlers.GetURL)
-	r.Post("/api/shorten", handlers.SaveJSONURL)
-
-	r.Get("/ping", handlers.HandlePing)
-
-	return r
-}
 
 func main() {
 	configs.ParseFlags()
@@ -44,10 +27,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	router := registerRouter()
+	initialisedRouter := router.InitRouter()
 
 	file.RecoverURLs()
 
 	logger.Log.Info("Running server", zap.String("address", configs.FlagRunAddr))
-	logger.Log.Fatal("Server crashed", zap.Error(http.ListenAndServe(configs.FlagRunAddr, router)))
+	logger.Log.Fatal("Server crashed", zap.Error(http.ListenAndServe(configs.FlagRunAddr, initialisedRouter)))
 }
