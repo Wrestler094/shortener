@@ -1,6 +1,8 @@
 package file
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -9,6 +11,7 @@ import (
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/logger"
+	"github.com/Wrestler094/shortener/internal/storage"
 )
 
 var (
@@ -46,34 +49,34 @@ func SaveURL(shortURL string, originalURL string) {
 	}
 }
 
-func RecoverURLs() {
-	//file, err := os.OpenFile(configs.FlagFileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
-	//if err != nil {
-	//	logger.Log.Error("Error of writing url to file", zap.Error(err))
-	//	return
-	//}
-	//
-	//scanner := bufio.NewScanner(file)
-	//for scanner.Scan() {
-	//	line := scanner.Text()
-	//
-	//	var entry URLEntry
-	//	if err := json.Unmarshal([]byte(line), &entry); err != nil {
-	//		logger.Log.Error("Error of reading url from file", zap.Error(err))
-	//		continue
-	//	}
-	//
-	//	storage.Storage.Save(entry.ShortURL, entry.OriginalURL)
-	//}
-	//
-	//if err := scanner.Err(); err != nil {
-	//	logger.Log.Error("Scanner error", zap.Error(err))
-	//	return
-	//}
-	//
-	//err = file.Close()
-	//if err != nil {
-	//	logger.Log.Error("Error of closing file", zap.Error(err))
-	//	return
-	//}
+func RecoverURLs(store storage.IStorage) {
+	file, err := os.OpenFile(configs.FlagFileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
+	if err != nil {
+		logger.Log.Error("Error of writing url to file", zap.Error(err))
+		return
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		var entry URLEntry
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
+			logger.Log.Error("Error of reading url from file", zap.Error(err))
+			continue
+		}
+
+		store.Save(entry.ShortURL, entry.OriginalURL)
+	}
+
+	if err := scanner.Err(); err != nil {
+		logger.Log.Error("Scanner error", zap.Error(err))
+		return
+	}
+
+	err = file.Close()
+	if err != nil {
+		logger.Log.Error("Error of closing file", zap.Error(err))
+		return
+	}
 }
