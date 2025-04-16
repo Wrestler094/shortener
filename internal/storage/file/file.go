@@ -50,9 +50,6 @@ func SaveURL(shortURL string, originalURL string) {
 }
 
 func RecoverURLs() {
-	mu.Lock()
-	defer mu.Unlock()
-
 	file, err := os.OpenFile(configs.FlagFileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		logger.Log.Error("Error of writing url to file", zap.Error(err))

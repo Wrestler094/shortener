@@ -22,11 +22,11 @@ var (
 func ParseFlags() {
 	flag.StringVar(&FlagRunAddr, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagBaseAddr, "b", "http://localhost:8080", "basic address and port of result url")
-	flag.StringVar(&FlagFileStoragePath, "f", "", "path to the file where current settings are saved")
+	//flag.StringVar(&FlagFileStoragePath, "f", "", "path to the file where current settings are saved")
 	flag.StringVar(&FlagDatabaseDSN, "d", "", "database connection")
 
 	/* DEV */
-	//flag.StringVar(&FlagFileStoragePath, "f", "internal/storage/urls.json", "path to the file where current settings are saved")
+	flag.StringVar(&FlagFileStoragePath, "f", "internal/storage/urls.json", "path to the file where current settings are saved")
 	//flag.StringVar(&FlagDatabaseDSN, "d", "postgres://admin:secret@localhost:5432/mydatabase?sslmode=disable", "database connection")
 
 	flag.Parse()
