@@ -23,14 +23,17 @@ func InitApp() *App {
 	var store storage.IStorage
 
 	if configs.FlagDatabaseDSN != "" {
-		if err := postgres.Init(configs.FlagDatabaseDSN); err != nil {
+		// todo ask gpt
+		postgresStore, err := postgres.NewPostgresStorage(configs.FlagDatabaseDSN)
+		store = postgresStore
+		if err != nil {
 			log.Fatal(err)
 		}
 
-		store = postgres.NewPostgresStorage()
 	} else {
 		store = memory.NewMemoryStorage()
 		// todo: может быть восстанавливать и в Postgresql??
+		// todo: Передавать строку до файла
 		file.RecoverURLs()
 	}
 

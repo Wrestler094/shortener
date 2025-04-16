@@ -15,15 +15,21 @@ import (
 	"github.com/Wrestler094/shortener/internal/logger"
 )
 
-// TODO: refactor
-var DB *sql.DB
-
 type PostgresStorage struct {
 	db *sql.DB
 }
 
-func NewPostgresStorage() *PostgresStorage {
-	return &PostgresStorage{}
+func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
+	db, err := connect(dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = migrateDB(dsn); err != nil {
+		return nil, err
+	}
+
+	return &PostgresStorage{db: db}, nil
 }
 
 func (ps *PostgresStorage) Save(shortID string, originalURL string) {
@@ -56,28 +62,22 @@ func (ps *PostgresStorage) Ping(ctx context.Context) error {
 	return ps.db.PingContext(ctx)
 }
 
-func Init(dsn string) error {
-	var err error
-
-	DB, err = sql.Open("pgx", dsn)
+func connect(dsn string) (*sql.DB, error) {
+	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		return fmt.Errorf("failed to open postgres db: %w", err)
+		return nil, fmt.Errorf("failed to open postgres db: %w", err)
 	}
 
-	if err = DB.Ping(); err != nil {
-		return fmt.Errorf("failed to ping postgres db: %w", err)
+	if err = db.Ping(); err != nil {
+		return nil, fmt.Errorf("failed to ping postgres db: %w", err)
 	}
 
 	log.Println("Connected to PostgreSQL using pgx.")
 
-	if err = Migrate(dsn); err != nil {
-		return fmt.Errorf("failed to migrate database: %w", err)
-	}
-
-	return nil
+	return db, nil
 }
 
-func Migrate(dsn string) error {
+func migrateDB(dsn string) error {
 	m, err := migrate.New("file://migrations", dsn)
 	if err != nil {
 		return fmt.Errorf("failed to create db migration: %w", err)
@@ -88,5 +88,6 @@ func Migrate(dsn string) error {
 	}
 
 	log.Println("Migrations applied successfully.")
+
 	return nil
 }
