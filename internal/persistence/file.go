@@ -1,4 +1,4 @@
-package file
+package persistence
 
 import (
 	"bufio"
@@ -11,21 +11,20 @@ import (
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/logger"
-	"github.com/Wrestler094/shortener/internal/storage/memory"
 )
 
-var (
-	mu sync.Mutex
-)
-
-type URLEntry struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+type FileStorage struct {
+	path string
+	mu   sync.Mutex
 }
 
-func SaveURL(shortURL string, originalURL string) {
-	mu.Lock()
-	defer mu.Unlock()
+func NewFileStorage(path string) *FileStorage {
+	return &FileStorage{path: path}
+}
+
+func (fs *FileStorage) SaveURL(shortURL, originalURL string) {
+	fs.mu.Lock()
+	defer fs.mu.Unlock()
 
 	data := fmt.Sprintf("{\"short_url\":\"%s\",\"original_url\":\"%s\"}\n", shortURL, originalURL)
 	byteSlice := []byte(data)
@@ -49,15 +48,24 @@ func SaveURL(shortURL string, originalURL string) {
 	}
 }
 
-func RecoverURLs() {
-	mu.Lock()
-	defer mu.Unlock()
+type URLEntry struct {
+	ShortURL    string `json:"short_url"`
+	OriginalURL string `json:"original_url"`
+}
 
-	file, err := os.OpenFile(configs.FlagFileStoragePath, os.O_RDONLY|os.O_CREATE, 0666)
+func (fs *FileStorage) RecoverURLs() map[string]string {
+	result := make(map[string]string)
+
+	file, err := os.OpenFile(fs.path, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
-		logger.Log.Error("Error of writing url to file", zap.Error(err))
-		return
+		logger.Log.Error("Error opening file", zap.Error(err))
+		return result
 	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			logger.Log.Error("Error closing file", zap.Error(err))
+		}
+	}()
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
@@ -65,21 +73,16 @@ func RecoverURLs() {
 
 		var entry URLEntry
 		if err := json.Unmarshal([]byte(line), &entry); err != nil {
-			logger.Log.Error("Error of reading url from file", zap.Error(err))
+			logger.Log.Error("Error unmarshalling line", zap.Error(err))
 			continue
 		}
 
-		memory.Save(entry.ShortURL, entry.OriginalURL)
+		result[entry.ShortURL] = entry.OriginalURL
 	}
 
 	if err := scanner.Err(); err != nil {
 		logger.Log.Error("Scanner error", zap.Error(err))
-		return
 	}
 
-	err = file.Close()
-	if err != nil {
-		logger.Log.Error("Error of closing file", zap.Error(err))
-		return
-	}
+	return result
 }

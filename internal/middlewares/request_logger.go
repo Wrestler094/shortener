@@ -1,11 +1,13 @@
 package middlewares
 
 import (
-	"github.com/Wrestler094/shortener/internal/logger"
-	"go.uber.org/zap"
 	"net/http"
 	"strconv"
 	"time"
+
+	"go.uber.org/zap"
+
+	"github.com/Wrestler094/shortener/internal/logger"
 )
 
 // берём структуру для хранения сведений об ответе

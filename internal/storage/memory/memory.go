@@ -1,22 +1,29 @@
 package memory
 
-import "sync"
-
-var (
-	// map[shortenURL]URL
-	storage = make(map[string]string)
-	mu      sync.RWMutex
+import (
+	"sync"
 )
 
-func Save(shortenURL string, url string) {
-	mu.Lock()
-	storage[shortenURL] = url
-	mu.Unlock()
+type MemoryStorage struct {
+	storage map[string]string // map[shortURL]originalURL
+	mu      sync.RWMutex
 }
 
-func Get(shortenURL string) (string, bool) {
-	mu.RLock()
-	url, ok := storage[shortenURL]
-	mu.RUnlock()
+func NewMemoryStorage(recoveredUrls map[string]string) *MemoryStorage {
+	return &MemoryStorage{storage: recoveredUrls}
+}
+
+func (ms *MemoryStorage) Save(shortURL string, originalURL string) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	ms.storage[shortURL] = originalURL
+}
+
+func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	url, ok := ms.storage[shortURL]
 	return url, ok
 }

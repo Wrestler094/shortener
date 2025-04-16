@@ -3,13 +3,23 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Wrestler094/shortener/internal/storage/postgres"
+	"github.com/Wrestler094/shortener/internal/storage"
 )
 
-func HandlePing(w http.ResponseWriter, r *http.Request) {
-	if err := postgres.DB.PingContext(r.Context()); err != nil {
-		http.Error(w, "database is not available", http.StatusInternalServerError)
-		return
+type PingHandler struct {
+	storage storage.IStorage
+}
+
+func NewPingHandler(storage storage.IStorage) *PingHandler {
+	return &PingHandler{storage: storage}
+}
+
+func (h *PingHandler) Ping(w http.ResponseWriter, r *http.Request) {
+	if ps, ok := h.storage.(storage.IPingableStorage); ok {
+		if err := ps.Ping(r.Context()); err != nil {
+			http.Error(w, "DB unavailable", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	w.WriteHeader(http.StatusOK)
