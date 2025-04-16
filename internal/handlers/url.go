@@ -9,7 +9,7 @@ import (
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/services"
-	"github.com/Wrestler094/shortener/internal/storage/memory"
+	"github.com/Wrestler094/shortener/internal/storage"
 )
 
 //easyjson:json
@@ -80,7 +80,7 @@ func GetURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	url, ok := memory.Get(urlParts[0])
+	url, ok := storage.Storage.Get(urlParts[0])
 	if !ok {
 		http.Error(res, "shorten URL not found", http.StatusBadRequest)
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"github.com/Wrestler094/shortener/internal/router"
 	"log"
 	"net/http"
 
@@ -11,7 +10,10 @@ import (
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/logger"
+	"github.com/Wrestler094/shortener/internal/router"
+	"github.com/Wrestler094/shortener/internal/storage"
 	"github.com/Wrestler094/shortener/internal/storage/file"
+	"github.com/Wrestler094/shortener/internal/storage/memory"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
 
@@ -28,6 +30,7 @@ func main() {
 	}
 
 	initialisedRouter := router.InitRouter()
+	storage.Storage = memory.NewMemoryStorage()
 
 	file.RecoverURLs()
 

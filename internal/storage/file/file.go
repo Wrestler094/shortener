@@ -11,7 +11,7 @@ import (
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/logger"
-	"github.com/Wrestler094/shortener/internal/storage/memory"
+	"github.com/Wrestler094/shortener/internal/storage"
 )
 
 var (
@@ -69,7 +69,7 @@ func RecoverURLs() {
 			continue
 		}
 
-		memory.Save(entry.ShortURL, entry.OriginalURL)
+		storage.Storage.Save(entry.ShortURL, entry.OriginalURL)
 	}
 
 	if err := scanner.Err(); err != nil {
