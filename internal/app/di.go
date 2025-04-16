@@ -6,10 +6,10 @@ import (
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/handlers"
+	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/router"
 	"github.com/Wrestler094/shortener/internal/services"
 	"github.com/Wrestler094/shortener/internal/storage"
-	"github.com/Wrestler094/shortener/internal/storage/file"
 	"github.com/Wrestler094/shortener/internal/storage/memory"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
@@ -20,26 +20,22 @@ type App struct {
 
 func InitApp() *App {
 	// Выбор хранилища (можно сюда добавить file/postgres)
+	var fileStorage = persistence.NewFileStorage(configs.FlagDatabaseDSN)
 	var store storage.IStorage
 
 	if configs.FlagDatabaseDSN != "" {
-		// todo ask gpt
 		postgresStore, err := postgres.NewPostgresStorage(configs.FlagDatabaseDSN)
-		store = postgresStore
 		if err != nil {
 			log.Fatal(err)
 		}
-
+		store = postgresStore
 	} else {
-		store = memory.NewMemoryStorage()
-		// todo: может быть восстанавливать и в Postgresql??
-		// todo: Передавать строку до файла
-		// todo: Передавать указатель??
-		file.RecoverURLs(store)
+		recoveredUrls := fileStorage.RecoverURLs()
+		store = memory.NewMemoryStorage(recoveredUrls)
 	}
 
 	// Инициализация сервисов
-	urlService := services.NewURLService(store)
+	urlService := services.NewURLService(store, fileStorage)
 
 	// Инициализация хендлеров
 	urlHandler := handlers.NewURLHandler(urlService)

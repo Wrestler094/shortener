@@ -4,28 +4,20 @@ import (
 	"sync"
 )
 
-// TODO: Попробовать переписать с type shortURL / OriginalURL
-
 type MemoryStorage struct {
-	// map[shortURL]originalURL
-	storage map[string]string
+	storage map[string]string // map[shortURL]originalURL
 	mu      sync.RWMutex
 }
 
-func NewMemoryStorage() *MemoryStorage {
-	// TODO: Realise urls recover from file
-
-	return &MemoryStorage{
-		storage: make(map[string]string),
-		mu:      sync.RWMutex{},
-	}
+func NewMemoryStorage(recoveredUrls map[string]string) *MemoryStorage {
+	return &MemoryStorage{storage: recoveredUrls}
 }
 
-func (ms *MemoryStorage) Save(shortURL string, OriginalURL string) {
+func (ms *MemoryStorage) Save(shortURL string, originalURL string) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	ms.storage[shortURL] = OriginalURL
+	ms.storage[shortURL] = originalURL
 }
 
 func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
