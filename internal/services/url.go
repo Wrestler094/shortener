@@ -9,7 +9,15 @@ import (
 	"github.com/Wrestler094/shortener/internal/utils"
 )
 
-func SaveURL(url string) (string, error) {
+type URLService struct {
+	storage storage.IStorage
+}
+
+func NewURLService(s storage.IStorage) *URLService {
+	return &URLService{storage: s}
+}
+
+func (s *URLService) SaveURL(url string) (string, error) {
 	originalURL := strings.TrimSpace(url)
 
 	if !strings.HasPrefix(originalURL, "http://") && !strings.HasPrefix(originalURL, "https://") {
@@ -22,8 +30,12 @@ func SaveURL(url string) (string, error) {
 	}
 
 	// TODO: Сделать проверку на случай если id или URL уже существует
-	storage.Storage.Save(shortID, originalURL)
+	s.storage.Save(shortID, originalURL)
 	file.SaveURL(shortID, originalURL)
 
 	return shortID, nil
+}
+
+func (s *URLService) GetURLByID(id string) (string, bool) {
+	return s.storage.Get(id)
 }
