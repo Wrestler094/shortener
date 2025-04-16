@@ -9,9 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/Wrestler094/shortener/internal/storage"
+	"github.com/Wrestler094/shortener/internal/storage/memory"
 )
 
 func TestSavePlainURL(t *testing.T) {
+	storage.Storage = memory.NewMemoryStorage()
+
 	type want struct {
 		code        int
 		contentType string
@@ -22,6 +27,14 @@ func TestSavePlainURL(t *testing.T) {
 		name string
 		want want
 	}{
+		{
+			name: "positive test #1",
+			want: want{
+				code:        201,
+				contentType: "text/plain",
+				bodyContent: "http://yandex.ru",
+			},
+		},
 		{
 			name: "negative test #1",
 			want: want{
