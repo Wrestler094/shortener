@@ -13,23 +13,25 @@ type MemoryStorage struct {
 }
 
 func NewMemoryStorage() *MemoryStorage {
+	// TODO: Realise urls recover from file
+
 	return &MemoryStorage{
 		storage: make(map[string]string),
 		mu:      sync.RWMutex{},
 	}
 }
 
-func (m *MemoryStorage) Save(shortURL string, OriginalURL string) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
+func (ms *MemoryStorage) Save(shortURL string, OriginalURL string) {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
 
-	m.storage[shortURL] = OriginalURL
+	ms.storage[shortURL] = OriginalURL
 }
 
-func (m *MemoryStorage) Get(shortURL string) (string, bool) {
-	m.mu.RLock()
-	defer m.mu.RUnlock()
+func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
 
-	url, ok := m.storage[shortURL]
+	url, ok := ms.storage[shortURL]
 	return url, ok
 }

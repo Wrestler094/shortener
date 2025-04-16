@@ -1,22 +1,60 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	"github.com/Wrestler094/shortener/internal/configs"
-	"github.com/golang-migrate/migrate/v4"
 	"log"
 
+	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"go.uber.org/zap"
+
+	"github.com/Wrestler094/shortener/internal/logger"
 )
 
+// TODO: refactor
 var DB *sql.DB
 
-func InitPostgres(dsn string) error {
-	if configs.FlagDatabaseDSN == "" {
-		return nil
+type PostgresStorage struct {
+	db *sql.DB
+}
+
+func NewPostgresStorage() *PostgresStorage {
+	return &PostgresStorage{}
+}
+
+func (ps *PostgresStorage) Save(shortID string, originalURL string) {
+	_, _ = ps.db.ExecContext(
+		context.Background(),
+		`INSERT INTO urls (short_id, original_url) VALUES ($1, $2) ON CONFLICT (short_id) DO NOTHING`,
+		shortID, originalURL,
+	)
+}
+
+func (ps *PostgresStorage) Get(shortID string) (string, bool) {
+	var originalURL string
+	err := ps.db.QueryRowContext(
+		context.Background(),
+		`SELECT original_url FROM urls WHERE short_id = $1 ORDER BY DESC LIMIT 1`,
+		shortID,
+	).Scan(&originalURL)
+
+	if err == sql.ErrNoRows {
+		return "", false
+	} else if err != nil {
+		logger.Log.Error("Error of open file", zap.Error(err))
+		return "", false
 	}
 
+	return originalURL, true
+}
+
+func (ps *PostgresStorage) Ping(ctx context.Context) error {
+	return ps.db.PingContext(ctx)
+}
+
+func Init(dsn string) error {
 	var err error
 
 	DB, err = sql.Open("pgx", dsn)

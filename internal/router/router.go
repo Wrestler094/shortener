@@ -8,19 +8,18 @@ import (
 	"github.com/Wrestler094/shortener/internal/middlewares"
 )
 
-func InitRouter(urlHandler *handlers.URLHandler) *chi.Mux {
+func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middlewares.RequestLogger)
 	r.Use(middlewares.Compressor)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/", urlHandler.SavePlainURL)
-	r.Post("/api/shorten", urlHandler.SaveJSONURL)
-	r.Get("/{id}", urlHandler.GetURL)
+	r.Post("/", handlers.URLHandler.SavePlainURL)
+	r.Post("/api/shorten", handlers.URLHandler.SaveJSONURL)
+	r.Get("/{id}", handlers.URLHandler.GetURL)
 
-	// todo
-	r.Get("/ping", handlers.HandlePing)
+	r.Get("/ping", handlers.PingHandler.Ping)
 
 	return r
 }
