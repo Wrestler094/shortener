@@ -34,6 +34,7 @@ func InitApp() *App {
 		store = memory.NewMemoryStorage()
 		// todo: может быть восстанавливать и в Postgresql??
 		// todo: Передавать строку до файла
+		// todo: Передавать указатель??
 		file.RecoverURLs(store)
 	}
 

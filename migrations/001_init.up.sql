@@ -1,6 +1,6 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TABLE short_links (
+CREATE TABLE urls (
     id SERIAL PRIMARY KEY,
     short_url VARCHAR(20) NOT NULL UNIQUE,
     original_url TEXT NOT NULL UNIQUE

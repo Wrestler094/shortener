@@ -35,7 +35,7 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 func (ps *PostgresStorage) Save(shortID string, originalURL string) {
 	_, _ = ps.db.ExecContext(
 		context.Background(),
-		`INSERT INTO urls (short_id, original_url) VALUES ($1, $2) ON CONFLICT (short_id) DO NOTHING`,
+		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`,
 		shortID, originalURL,
 	)
 }
@@ -44,7 +44,7 @@ func (ps *PostgresStorage) Get(shortID string) (string, bool) {
 	var originalURL string
 	err := ps.db.QueryRowContext(
 		context.Background(),
-		`SELECT original_url FROM urls WHERE short_id = $1 ORDER BY id DESC LIMIT 1`,
+		`SELECT original_url FROM urls WHERE short_url = $1 ORDER BY id DESC LIMIT 1`,
 		shortID,
 	).Scan(&originalURL)
 
