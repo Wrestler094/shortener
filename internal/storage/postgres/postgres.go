@@ -38,7 +38,7 @@ func (ps *PostgresStorage) Get(shortID string) (string, bool) {
 	var originalURL string
 	err := ps.db.QueryRowContext(
 		context.Background(),
-		`SELECT original_url FROM urls WHERE short_id = $1 ORDER BY DESC LIMIT 1`,
+		`SELECT original_url FROM urls WHERE short_id = $1 ORDER BY id DESC LIMIT 1`,
 		shortID,
 	).Scan(&originalURL)
 
