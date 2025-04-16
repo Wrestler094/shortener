@@ -12,6 +12,7 @@ import (
 	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/router"
 	"github.com/Wrestler094/shortener/internal/storage"
+	"github.com/Wrestler094/shortener/internal/storage/file"
 	"github.com/Wrestler094/shortener/internal/storage/memory"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
@@ -28,10 +29,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	initialisedRouter := router.InitRouter()
 	storage.Storage = memory.NewMemoryStorage()
+	initialisedRouter := router.InitRouter()
 
-	//file.RecoverURLs()
+	file.RecoverURLs()
 
 	logger.Log.Info("Running server", zap.String("address", configs.FlagRunAddr))
 	logger.Log.Fatal("Server crashed", zap.Error(http.ListenAndServe(configs.FlagRunAddr, initialisedRouter)))

@@ -21,7 +21,7 @@ func SaveURL(url string) (string, error) {
 		return "", errors.New("failed to generate short id")
 	}
 
-	// TODO: Сделать првоерку на случай если id или URL уже существует
+	// TODO: Сделать проверку на случай если id или URL уже существует
 	storage.Storage.Save(shortID, originalURL)
 	file.SaveURL(shortID, originalURL)
 

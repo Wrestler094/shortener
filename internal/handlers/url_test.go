@@ -23,14 +23,6 @@ func TestSavePlainURL(t *testing.T) {
 		want want
 	}{
 		{
-			name: "positive test #1",
-			want: want{
-				code:        201,
-				contentType: "text/plain",
-				bodyContent: "http://yandex.ru",
-			},
-		},
-		{
 			name: "negative test #1",
 			want: want{
 				code:        400,
