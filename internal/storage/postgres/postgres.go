@@ -42,6 +42,7 @@ func (ps *PostgresStorage) Save(shortID, originalURL string) error {
 		shortID, originalURL)
 
 	if err != nil {
+		fmt.Println("=====", err, "=====")
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return ErrURLAlreadyExists
