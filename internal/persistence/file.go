@@ -59,6 +59,10 @@ type URLEntry struct {
 func (fs *FileStorage) RecoverURLs() map[string]string {
 	result := make(map[string]string)
 
+	if fs.path == "" {
+		return result
+	}
+
 	file, err := os.OpenFile(fs.path, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
 		logger.Log.Error("Error opening file", zap.Error(err))

@@ -38,11 +38,10 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 
 func (ps *PostgresStorage) Save(shortID, originalURL string) error {
 	_, err := ps.db.ExecContext(context.Background(),
-		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (original_url) DO NOTHING`,
+		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`,
 		shortID, originalURL)
 
 	if err != nil {
-		fmt.Println("=====", err, "=====")
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
 			return ErrURLAlreadyExists
@@ -72,6 +71,7 @@ func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
 		i += 2
 	}
 
+	// fixme: ...
 	query := strings.TrimSuffix(builder.String(), ",") + " ON CONFLICT (short_url) DO NOTHING"
 
 	_, err := ps.db.ExecContext(context.Background(), query, params...)
