@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/services"
+	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
 
 type ShortenRequest struct {
@@ -42,7 +44,7 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	}
 
 	shortID, err := h.service.SaveURL(shortenRequest.URL)
-	if err != nil {
+	if err != nil && !errors.Is(err, postgres.ErrURLAlreadyExists) {
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -68,6 +70,12 @@ func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 
 	shortID, err := h.service.SaveURL(string(body))
 	if err != nil {
+		if errors.Is(err, postgres.ErrURLAlreadyExists) {
+			res.Header().Set("Content-Type", "text/plain")
+			res.WriteHeader(http.StatusConflict)
+			res.Write([]byte(configs.FlagBaseAddr + "/" + shortID))
+			return
+		}
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
