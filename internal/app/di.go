@@ -20,7 +20,7 @@ type App struct {
 
 func InitApp() *App {
 	// Выбор хранилища (можно сюда добавить file/postgres)
-	var fileStorage = persistence.NewFileStorage(configs.FlagDatabaseDSN)
+	var fileStorage = persistence.NewFileStorage(configs.FlagFileStoragePath)
 	var store storage.IStorage
 
 	if configs.FlagDatabaseDSN != "" {
