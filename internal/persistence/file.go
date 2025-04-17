@@ -23,6 +23,10 @@ func NewFileStorage(path string) *FileStorage {
 }
 
 func (fs *FileStorage) SaveURL(shortURL, originalURL string) {
+	if fs.path == "" {
+		return
+	}
+
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
@@ -55,6 +59,10 @@ type URLEntry struct {
 
 func (fs *FileStorage) RecoverURLs() map[string]string {
 	result := make(map[string]string)
+
+	if fs.path == "" {
+		return result
+	}
 
 	file, err := os.OpenFile(fs.path, os.O_RDONLY|os.O_CREATE, 0666)
 	if err != nil {
