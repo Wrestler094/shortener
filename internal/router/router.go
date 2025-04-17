@@ -17,6 +17,7 @@ func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 
 	r.Post("/", handlers.URLHandler.SavePlainURL)
 	r.Post("/api/shorten", handlers.URLHandler.SaveJSONURL)
+	r.Post("/api/shorten/batch", handlers.URLHandler.SaveBatchURLs)
 	r.Get("/{id}", handlers.URLHandler.GetURL)
 
 	r.Get("/ping", handlers.PingHandler.Ping)

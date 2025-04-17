@@ -41,12 +41,8 @@ func InitApp() *App {
 	urlHandler := handlers.NewURLHandler(urlService)
 	pingHandler := handlers.NewPingHandler(store)
 
-	hs := &handlers.Handlers{
-		URLHandler:  urlHandler,
-		PingHandler: pingHandler,
-	}
-
 	// Создание роутера
+	hs := handlers.NewHandlers(urlHandler, pingHandler)
 	r := router.InitRouter(hs)
 
 	return &App{Router: r}

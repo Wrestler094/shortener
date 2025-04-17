@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/storage"
 	"github.com/Wrestler094/shortener/internal/utils"
@@ -39,4 +41,37 @@ func (s *URLService) SaveURL(url string) (string, error) {
 
 func (s *URLService) GetURLByID(id string) (string, bool) {
 	return s.storage.Get(id)
+}
+
+func (s *URLService) SaveBatch(batch []dto.BatchRequestItem) ([]dto.BatchResponseItem, error) {
+	var response []dto.BatchResponseItem
+
+	urls := make(map[string]string) // shortURL[originalURL]
+
+	for _, item := range batch {
+		shortID, err := utils.GenerateShortID()
+		if err != nil {
+			return nil, err
+		}
+
+		urls[shortID] = strings.TrimSpace(item.OriginalURL)
+
+		response = append(response, dto.BatchResponseItem{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      configs.FlagBaseAddr + "/" + shortID,
+		})
+	}
+
+	// Сохраняем атомарно
+	err := s.storage.SaveBatch(urls)
+	if err != nil {
+		return nil, err
+	}
+
+	// Запись в файл
+	for shortID, orig := range urls {
+		s.fileStorage.SaveURL(shortID, orig)
+	}
+
+	return response, nil
 }

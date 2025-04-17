@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -38,6 +39,36 @@ func (ps *PostgresStorage) Save(shortID string, originalURL string) {
 		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`,
 		shortID, originalURL,
 	)
+}
+
+func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
+	if len(urls) == 0 {
+		return nil
+	}
+
+	var (
+		builder strings.Builder
+		params  []interface{}
+		i       = 1
+	)
+
+	builder.WriteString("INSERT INTO urls (short_url, original_url) VALUES ")
+
+	for short, orig := range urls {
+		builder.WriteString(fmt.Sprintf("($%d, $%d),", i, i+1))
+		params = append(params, short, orig)
+		i += 2
+	}
+
+	query := strings.TrimSuffix(builder.String(), ",") + " ON CONFLICT (short_url) DO NOTHING"
+
+	_, err := ps.db.ExecContext(context.Background(), query, params...)
+	if err != nil {
+		logger.Log.Error("Failed batch insert", zap.Error(err))
+		return fmt.Errorf("batch insert failed: %w", err)
+	}
+
+	return nil
 }
 
 func (ps *PostgresStorage) Get(shortID string) (string, bool) {
