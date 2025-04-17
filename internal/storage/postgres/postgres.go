@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -10,6 +11,8 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
+	"github.com/jackc/pgerrcode"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 
@@ -33,12 +36,20 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	return &PostgresStorage{db: db}, nil
 }
 
-func (ps *PostgresStorage) Save(shortID string, originalURL string) {
-	_, _ = ps.db.ExecContext(
-		context.Background(),
-		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2) ON CONFLICT (short_url) DO NOTHING`,
-		shortID, originalURL,
-	)
+func (ps *PostgresStorage) Save(shortID, originalURL string) error {
+	_, err := ps.db.ExecContext(context.Background(),
+		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`,
+		shortID, originalURL)
+
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+			return ErrURLAlreadyExists
+		}
+		return err
+	}
+
+	return nil
 }
 
 func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
@@ -60,6 +71,7 @@ func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
 		i += 2
 	}
 
+	// fixme: ...
 	query := strings.TrimSuffix(builder.String(), ",") + " ON CONFLICT (short_url) DO NOTHING"
 
 	_, err := ps.db.ExecContext(context.Background(), query, params...)
@@ -87,6 +99,18 @@ func (ps *PostgresStorage) Get(shortID string) (string, bool) {
 	}
 
 	return originalURL, true
+}
+
+func (ps *PostgresStorage) FindShortByOriginalURL(originalURL string) (string, error) {
+	var short string
+	err := ps.db.QueryRowContext(context.Background(),
+		`SELECT short_url FROM urls WHERE original_url = $1 LIMIT 1`,
+		originalURL).Scan(&short)
+
+	if err != nil {
+		return "", err
+	}
+	return short, nil
 }
 
 func (ps *PostgresStorage) Ping(ctx context.Context) error {

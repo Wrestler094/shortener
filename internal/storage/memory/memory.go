@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -13,11 +14,12 @@ func NewMemoryStorage(recoveredUrls map[string]string) *MemoryStorage {
 	return &MemoryStorage{storage: recoveredUrls}
 }
 
-func (ms *MemoryStorage) Save(shortURL string, originalURL string) {
+func (ms *MemoryStorage) Save(shortURL string, originalURL string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
 	ms.storage[shortURL] = originalURL
+	return nil
 }
 
 func (ms *MemoryStorage) SaveBatch(batch map[string]string) error {
@@ -37,4 +39,17 @@ func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
 
 	url, ok := ms.storage[shortURL]
 	return url, ok
+}
+
+func (ms *MemoryStorage) FindShortByOriginalURL(originalURL string) (string, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	for short, orig := range ms.storage {
+		if orig == originalURL {
+			return short, nil
+		}
+	}
+
+	return "", fmt.Errorf("could not find original url")
 }

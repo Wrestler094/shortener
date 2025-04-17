@@ -8,6 +8,7 @@ import (
 	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/storage"
+	"github.com/Wrestler094/shortener/internal/storage/postgres"
 	"github.com/Wrestler094/shortener/internal/utils"
 )
 
@@ -21,21 +22,30 @@ func NewURLService(s storage.IStorage, fs *persistence.FileStorage) *URLService 
 }
 
 func (s *URLService) SaveURL(url string) (string, error) {
-	originalURL := strings.TrimSpace(url)
-
-	if !strings.HasPrefix(originalURL, "http://") && !strings.HasPrefix(originalURL, "https://") {
+	original := strings.TrimSpace(url)
+	if !strings.HasPrefix(original, "http://") && !strings.HasPrefix(original, "https://") {
 		return "", errors.New("invalid URL format")
 	}
 
+	// TODO: Сделать проверку на случай если id или URL уже существует
 	shortID, err := utils.GenerateShortID()
 	if err != nil {
-		return "", errors.New("failed to generate short id")
+		return "", err
 	}
 
-	// TODO: Сделать проверку на случай если id или URL уже существует
-	s.storage.Save(shortID, originalURL)
-	s.fileStorage.SaveURL(shortID, originalURL)
+	err = s.storage.Save(shortID, original)
+	if err != nil {
+		if errors.Is(err, postgres.ErrURLAlreadyExists) {
+			existingShort, lookupErr := s.storage.FindShortByOriginalURL(original)
+			if lookupErr != nil {
+				return "", lookupErr
+			}
+			return existingShort, postgres.ErrURLAlreadyExists
+		}
+		return "", err
+	}
 
+	s.fileStorage.SaveURL(shortID, original)
 	return shortID, nil
 }
 
