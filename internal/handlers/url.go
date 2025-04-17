@@ -8,6 +8,7 @@ import (
 	"github.com/mailru/easyjson"
 
 	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/services"
 )
 
@@ -96,4 +97,37 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Location", url)
 	res.WriteHeader(http.StatusTemporaryRedirect)
+}
+
+func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
+	var batch dto.BatchRequestList
+
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(res, "Failed to read request", http.StatusBadRequest)
+		return
+	}
+	defer req.Body.Close()
+
+	if err := easyjson.Unmarshal(body, &batch); err != nil || len(batch) == 0 {
+		http.Error(res, "Invalid JSON or empty batch", http.StatusBadRequest)
+		return
+	}
+
+	result, err := h.service.SaveBatch(batch)
+	if err != nil {
+		http.Error(res, "Failed to process batch", http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Content-Type", "application/json")
+	res.WriteHeader(http.StatusCreated)
+
+	responseBody, err := easyjson.Marshal(result)
+	if err != nil {
+		http.Error(res, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+
+	res.Write(responseBody)
 }

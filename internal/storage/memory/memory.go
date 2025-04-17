@@ -20,6 +20,17 @@ func (ms *MemoryStorage) Save(shortURL string, originalURL string) {
 	ms.storage[shortURL] = originalURL
 }
 
+func (ms *MemoryStorage) SaveBatch(batch map[string]string) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	for k, v := range batch {
+		ms.storage[k] = v
+	}
+
+	return nil
+}
+
 func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
