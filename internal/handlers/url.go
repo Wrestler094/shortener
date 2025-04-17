@@ -44,7 +44,20 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	}
 
 	shortID, err := h.service.SaveURL(shortenRequest.URL)
-	if err != nil && !errors.Is(err, postgres.ErrURLAlreadyExists) {
+	if err != nil {
+		if errors.Is(err, postgres.ErrURLAlreadyExists) {
+			res.Header().Set("Content-Type", "application/json")
+			res.WriteHeader(http.StatusConflict)
+			responseBody, err := json.Marshal(ShortenResponse{
+				Result: configs.FlagBaseAddr + "/" + shortID,
+			})
+			if err != nil {
+				http.Error(res, "Failed to encode response", http.StatusInternalServerError)
+				return
+			}
+			res.Write(responseBody)
+		}
+
 		http.Error(res, err.Error(), http.StatusBadRequest)
 		return
 	}
