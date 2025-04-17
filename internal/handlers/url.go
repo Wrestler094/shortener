@@ -56,6 +56,7 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 				return
 			}
 			res.Write(responseBody)
+			return
 		}
 
 		http.Error(res, err.Error(), http.StatusBadRequest)
