@@ -9,7 +9,6 @@ import (
 
 	"go.uber.org/zap"
 
-	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/logger"
 )
 
@@ -23,13 +22,17 @@ func NewFileStorage(path string) *FileStorage {
 }
 
 func (fs *FileStorage) SaveURL(shortURL, originalURL string) {
+	if fs.path == "" {
+		return
+	}
+
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
 	data := fmt.Sprintf("{\"short_url\":\"%s\",\"original_url\":\"%s\"}\n", shortURL, originalURL)
 	byteSlice := []byte(data)
 
-	file, err := os.OpenFile(configs.FlagFileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	file, err := os.OpenFile(fs.path, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		logger.Log.Error("Error of open file", zap.Error(err))
 		return
