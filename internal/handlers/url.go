@@ -1,23 +1,20 @@
 package handlers
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"strings"
-
-	"github.com/mailru/easyjson"
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/services"
 )
 
-//easyjson:json
 type ShortenRequest struct {
 	URL string `json:"url"`
 }
 
-//easyjson:json
 type ShortenResponse struct {
 	Result string `json:"result"`
 }
@@ -39,7 +36,7 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	if err := easyjson.Unmarshal(body, &shortenRequest); err != nil {
+	if err := json.Unmarshal(body, &shortenRequest); err != nil {
 		http.Error(res, "Invalid JSON", http.StatusBadRequest)
 		return
 	}
@@ -52,7 +49,7 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
-	responseBody, err := easyjson.Marshal(ShortenResponse{
+	responseBody, err := json.Marshal(ShortenResponse{
 		Result: configs.FlagBaseAddr + "/" + shortID,
 	})
 	if err != nil {
@@ -100,7 +97,7 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
-	var batch dto.BatchRequestList
+	var batch []dto.BatchRequestItem
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
@@ -109,7 +106,7 @@ func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 	}
 	defer req.Body.Close()
 
-	if err := easyjson.Unmarshal(body, &batch); err != nil || len(batch) == 0 {
+	if err := json.Unmarshal(body, &batch); err != nil || len(batch) == 0 {
 		http.Error(res, "Invalid JSON or empty batch", http.StatusBadRequest)
 		return
 	}
@@ -123,7 +120,7 @@ func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 	res.WriteHeader(http.StatusCreated)
 
-	responseBody, err := easyjson.Marshal(result)
+	responseBody, err := json.Marshal(result)
 	if err != nil {
 		http.Error(res, "Failed to encode response", http.StatusInternalServerError)
 		return

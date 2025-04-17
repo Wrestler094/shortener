@@ -43,8 +43,8 @@ func (s *URLService) GetURLByID(id string) (string, bool) {
 	return s.storage.Get(id)
 }
 
-func (s *URLService) SaveBatch(batch dto.BatchRequestList) (dto.BatchResponseList, error) {
-	var response dto.BatchResponseList
+func (s *URLService) SaveBatch(batch []dto.BatchRequestItem) ([]dto.BatchResponseItem, error) {
+	var response []dto.BatchResponseItem
 
 	urls := make(map[string]string) // shortURL[originalURL]
 
