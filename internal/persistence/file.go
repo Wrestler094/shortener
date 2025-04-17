@@ -22,10 +22,6 @@ func NewFileStorage(path string) *FileStorage {
 }
 
 func (fs *FileStorage) SaveURL(shortURL, originalURL string) {
-	if fs.path == "" {
-		return
-	}
-
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
 
