@@ -21,7 +21,7 @@ func NewURLService(s storage.IStorage, fs *persistence.FileStorage) *URLService 
 	return &URLService{storage: s, fileStorage: fs}
 }
 
-func (s *URLService) SaveURL(url string) (string, error) {
+func (s *URLService) SaveURL(url string, userID string) (string, error) {
 	original := strings.TrimSpace(url)
 	if !strings.HasPrefix(original, "http://") && !strings.HasPrefix(original, "https://") {
 		return "", errors.New("invalid URL format")
@@ -33,7 +33,7 @@ func (s *URLService) SaveURL(url string) (string, error) {
 		return "", err
 	}
 
-	err = s.storage.Save(shortID, original)
+	err = s.storage.Save(shortID, original, userID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrURLAlreadyExists) {
 			existingShort, lookupErr := s.storage.FindShortByOriginalURL(original)
@@ -47,6 +47,39 @@ func (s *URLService) SaveURL(url string) (string, error) {
 
 	s.fileStorage.SaveURL(shortID, original)
 	return shortID, nil
+}
+
+func (s *URLService) SaveBatch(batch []dto.BatchRequestItem, userID string) ([]dto.BatchResponseItem, error) {
+	var response []dto.BatchResponseItem
+
+	urls := make(map[string]string) // shortURL[originalURL]
+
+	for _, item := range batch {
+		shortID, err := utils.GenerateShortID()
+		if err != nil {
+			return nil, err
+		}
+
+		urls[shortID] = strings.TrimSpace(item.OriginalURL)
+
+		response = append(response, dto.BatchResponseItem{
+			CorrelationID: item.CorrelationID,
+			ShortURL:      configs.FlagBaseAddr + "/" + shortID,
+		})
+	}
+
+	// Сохраняем атомарно
+	err := s.storage.SaveBatch(urls, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Запись в файл
+	for shortID, orig := range urls {
+		s.fileStorage.SaveURL(shortID, orig)
+	}
+
+	return response, nil
 }
 
 func (s *URLService) GetURLByID(id string) (string, bool) {
@@ -68,37 +101,4 @@ func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	}
 
 	return urls, nil
-}
-
-func (s *URLService) SaveBatch(batch []dto.BatchRequestItem) ([]dto.BatchResponseItem, error) {
-	var response []dto.BatchResponseItem
-
-	urls := make(map[string]string) // shortURL[originalURL]
-
-	for _, item := range batch {
-		shortID, err := utils.GenerateShortID()
-		if err != nil {
-			return nil, err
-		}
-
-		urls[shortID] = strings.TrimSpace(item.OriginalURL)
-
-		response = append(response, dto.BatchResponseItem{
-			CorrelationID: item.CorrelationID,
-			ShortURL:      configs.FlagBaseAddr + "/" + shortID,
-		})
-	}
-
-	// Сохраняем атомарно
-	err := s.storage.SaveBatch(urls)
-	if err != nil {
-		return nil, err
-	}
-
-	// Запись в файл
-	for shortID, orig := range urls {
-		s.fileStorage.SaveURL(shortID, orig)
-	}
-
-	return response, nil
 }

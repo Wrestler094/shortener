@@ -13,6 +13,7 @@ func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 
 	r.Use(middlewares.RequestLogger)
 	r.Use(middlewares.Compressor)
+	r.Use(middlewares.AuthCookieSetter)
 	r.Use(middleware.Recoverer)
 
 	r.Post("/", handlers.URLHandler.SavePlainURL)

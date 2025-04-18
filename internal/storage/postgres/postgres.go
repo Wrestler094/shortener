@@ -37,10 +37,10 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	return &PostgresStorage{db: db}, nil
 }
 
-func (ps *PostgresStorage) Save(shortID, originalURL string) error {
+func (ps *PostgresStorage) Save(shortID, originalURL, userID string) error {
 	_, err := ps.db.ExecContext(context.Background(),
-		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`,
-		shortID, originalURL)
+		`INSERT INTO urls (short_url, original_url, user_id) VALUES ($1, $2, $3)`,
+		shortID, originalURL, userID)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -53,7 +53,7 @@ func (ps *PostgresStorage) Save(shortID, originalURL string) error {
 	return nil
 }
 
-func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
+func (ps *PostgresStorage) SaveBatch(urls map[string]string, userID string) error {
 	if len(urls) == 0 {
 		return nil
 	}
@@ -64,15 +64,14 @@ func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
 		i       = 1
 	)
 
-	builder.WriteString("INSERT INTO urls (short_url, original_url) VALUES ")
+	builder.WriteString("INSERT INTO urls (short_url, original_url, user_id) VALUES ")
 
 	for short, orig := range urls {
-		builder.WriteString(fmt.Sprintf("($%d, $%d),", i, i+1))
-		params = append(params, short, orig)
-		i += 2
+		builder.WriteString(fmt.Sprintf("($%d, $%d, $%d),", i, i+1, i+2))
+		params = append(params, short, orig, userID)
+		i += 3
 	}
 
-	// fixme: ...
 	query := strings.TrimSuffix(builder.String(), ",") + " ON CONFLICT (short_url) DO NOTHING"
 
 	_, err := ps.db.ExecContext(context.Background(), query, params...)
