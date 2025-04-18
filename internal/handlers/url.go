@@ -45,8 +45,8 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userId, _ := middlewares.GetUserIDFromContext(req.Context())
-	shortID, err := h.service.SaveURL(shortenRequest.URL, userId)
+	userID, _ := middlewares.GetUserIDFromContext(req.Context())
+	shortID, err := h.service.SaveURL(shortenRequest.URL, userID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrURLAlreadyExists) {
 			res.Header().Set("Content-Type", "application/json")
@@ -78,8 +78,8 @@ func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userId, _ := middlewares.GetUserIDFromContext(req.Context())
-	shortID, err := h.service.SaveURL(string(body), userId)
+	userID, _ := middlewares.GetUserIDFromContext(req.Context())
+	shortID, err := h.service.SaveURL(string(body), userID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrURLAlreadyExists) {
 			res.Header().Set("Content-Type", "text/plain")
@@ -111,8 +111,8 @@ func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userId, _ := middlewares.GetUserIDFromContext(req.Context())
-	result, err := h.service.SaveBatch(batch, userId)
+	userID, _ := middlewares.GetUserIDFromContext(req.Context())
+	result, err := h.service.SaveBatch(batch, userID)
 	if err != nil {
 		http.Error(res, "Failed to process batch", http.StatusInternalServerError)
 		return
