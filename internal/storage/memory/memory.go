@@ -16,20 +16,18 @@ func NewMemoryStorage(recoveredUrls map[string]string) *MemoryStorage {
 	return &MemoryStorage{storage: recoveredUrls}
 }
 
-func (ms *MemoryStorage) Save(shortURL string, originalURL string, userID string) error {
+func (ms *MemoryStorage) Save(shortURL string, originalURL string, _ string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	fmt.Println(userID)
 	ms.storage[shortURL] = originalURL
 	return nil
 }
 
-func (ms *MemoryStorage) SaveBatch(batch map[string]string, userID string) error {
+func (ms *MemoryStorage) SaveBatch(batch map[string]string, _ string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
-	fmt.Println(userID)
 	for k, v := range batch {
 		ms.storage[k] = v
 	}
