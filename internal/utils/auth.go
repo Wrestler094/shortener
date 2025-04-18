@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	CookieName = "auth_token"
-	cookieKey  = "supersecret" // замените на ваш конфиг или env
+	CookieName   = "auth_token"
+	cookieKey    = "supersecret"
+	CookieMaxAge = 3600 * 24 * 365
 )
 
 func GenerateUserID() string {
