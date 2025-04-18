@@ -7,11 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/dto"
-	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/middlewares"
 	"github.com/Wrestler094/shortener/internal/services"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
@@ -144,16 +141,8 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
-	cookie, err := req.Cookie(utils.CookieName)
-	if err != nil {
-		logger.Log.Error("Error of open file", zap.Error(err), zap.Any("cookie", cookie))
-		http.Error(res, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	userID, ok := utils.ValidateSignedValue(cookie.Value)
-	if !ok {
-		logger.Log.Error("Error of open file", zap.String("userID", userID))
+	userID, ok := middlewares.GetUserIDFromContext(req.Context())
+	if !ok || userID == "" {
 		http.Error(res, "unauthorized", http.StatusUnauthorized)
 		return
 	}
