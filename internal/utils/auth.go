@@ -4,15 +4,13 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
-	"net/http"
 
 	"github.com/google/uuid"
 )
 
 const (
-	CookieName   = "auth_token"
-	cookieKey    = "supersecret" // замените на ваш конфиг или env
-	cookieMaxAge = 3600 * 24 * 365
+	CookieName = "auth_token"
+	cookieKey  = "supersecret" // замените на ваш конфиг или env
 )
 
 func GenerateUserID() string {
@@ -46,24 +44,4 @@ func ValidateSignedValue(signed string) (string, bool) {
 		}
 	}
 	return "", false
-}
-
-func EnsureUserCookie(w http.ResponseWriter, r *http.Request) string {
-	c, err := r.Cookie(CookieName)
-	if err == nil {
-		if userID, valid := ValidateSignedValue(c.Value); valid {
-			return userID
-		}
-	}
-
-	// Кука отсутствует или повреждена — выдаём новую
-	userID := GenerateUserID()
-	http.SetCookie(w, &http.Cookie{
-		Name:     CookieName,
-		Value:    CreateSignedValue(userID),
-		Path:     "/",
-		MaxAge:   cookieMaxAge,
-		HttpOnly: true,
-	})
-	return userID
 }

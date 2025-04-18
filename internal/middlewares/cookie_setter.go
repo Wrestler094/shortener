@@ -10,6 +10,7 @@ import (
 type contextKey string
 
 const userIDContextKey = contextKey("user_id")
+const cookieMaxAge = 3600 * 24 * 365
 
 func GetUserIDFromContext(ctx context.Context) (string, bool) {
 	id, ok := ctx.Value(userIDContextKey).(string)
@@ -34,6 +35,7 @@ func AuthCookieSetter(next http.Handler) http.Handler {
 				Name:     utils.CookieName,
 				Value:    signed,
 				Path:     "/",
+				MaxAge:   cookieMaxAge,
 				HttpOnly: true,
 			})
 		}
