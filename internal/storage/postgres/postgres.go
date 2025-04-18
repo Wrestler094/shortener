@@ -118,6 +118,11 @@ func (ps *PostgresStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 		}
 		result = append(result, item)
 	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return result, nil
 }
 
