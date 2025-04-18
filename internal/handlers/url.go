@@ -11,6 +11,7 @@ import (
 	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/services"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
+	"github.com/Wrestler094/shortener/internal/utils"
 )
 
 type ShortenRequest struct {
@@ -63,16 +64,9 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusCreated)
-	responseBody, err := json.Marshal(ShortenResponse{
+	utils.WriteJSON(res, http.StatusCreated, ShortenResponse{
 		Result: configs.FlagBaseAddr + "/" + shortID,
 	})
-	if err != nil {
-		http.Error(res, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-	res.Write(responseBody)
 }
 
 func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
@@ -118,6 +112,33 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 
+func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
+	cookie, err := req.Cookie("auth_token")
+	if err != nil {
+		http.Error(res, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userID, ok := utils.ValidateSignedValue(cookie.Value)
+	if !ok {
+		http.Error(res, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	userURLs, err := h.service.GetUserURLs(userID)
+	if err != nil {
+		http.Error(res, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	if len(userURLs) == 0 {
+		res.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	utils.WriteJSON(res, http.StatusOK, userURLs)
+}
+
 func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 	var batch []dto.BatchRequestItem
 
@@ -139,14 +160,5 @@ func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusCreated)
-
-	responseBody, err := json.Marshal(result)
-	if err != nil {
-		http.Error(res, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-
-	res.Write(responseBody)
+	utils.WriteJSON(res, http.StatusCreated, result)
 }

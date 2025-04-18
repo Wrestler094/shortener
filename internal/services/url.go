@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/Wrestler094/shortener/internal/configs"
@@ -51,6 +52,12 @@ func (s *URLService) SaveURL(url string) (string, error) {
 
 func (s *URLService) GetURLByID(id string) (string, bool) {
 	return s.storage.Get(id)
+}
+
+func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
+	var urls []dto.UserURLItem
+	fmt.Println(uuid)
+	return urls, nil
 }
 
 func (s *URLService) SaveBatch(batch []dto.BatchRequestItem) ([]dto.BatchResponseItem, error) {

@@ -16,11 +16,13 @@ func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 	r.Use(middleware.Recoverer)
 
 	r.Post("/", handlers.URLHandler.SavePlainURL)
+	r.Get("/{id}", handlers.URLHandler.GetURL)
+	r.Get("/ping", handlers.PingHandler.Ping)
+
 	r.Post("/api/shorten", handlers.URLHandler.SaveJSONURL)
 	r.Post("/api/shorten/batch", handlers.URLHandler.SaveBatchURLs)
-	r.Get("/{id}", handlers.URLHandler.GetURL)
 
-	r.Get("/ping", handlers.PingHandler.Ping)
+	r.Get("/api/user/urls", handlers.URLHandler.GetUserURLs)
 
 	return r
 }
