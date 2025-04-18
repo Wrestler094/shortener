@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -151,7 +150,7 @@ func connect(dsn string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping postgres db: %w", err)
 	}
 
-	log.Println("Connected to PostgreSQL using pgx.")
+	logger.Log.Info("Successfully connected to postgres database")
 
 	return db, nil
 }
@@ -166,7 +165,7 @@ func migrateDB(dsn string) error {
 		return fmt.Errorf("failed to apply db migration: %w", err)
 	}
 
-	log.Println("Migrations applied successfully.")
+	logger.Log.Info("Successfully applied db migration")
 
 	return nil
 }

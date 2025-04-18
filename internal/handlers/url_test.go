@@ -1,142 +1,136 @@
 package handlers
 
-// todo
+import (
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
 
-//
-//func TestSavePlainURL(t *testing.T) {
-//	type want struct {
-//		code        int
-//		contentType string
-//		bodyContent string
-//	}
-//
-//	tests := []struct {
-//		name string
-//		want want
-//	}{
-//		{
-//			name: "positive test #1",
-//			want: want{
-//				code:        201,
-//				contentType: "text/plain",
-//				bodyContent: "http://yandex.ru",
-//			},
-//		},
-//		{
-//			name: "negative test #1",
-//			want: want{
-//				code:        400,
-//				contentType: "text/plain",
-//				bodyContent: "yandex.ru",
-//			},
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		t.Run(test.name, func(t *testing.T) {
-//			body := strings.NewReader(test.want.bodyContent)
-//			request := httptest.NewRequest(http.MethodPost, "/", body)
-//			// создаём новый Recorder
-//			w := httptest.NewRecorder()
-//			SavePlainURL(w, request)
-//
-//			res := w.Result()
-//			// проверяем код ответа
-//			assert.Equal(t, test.want.code, res.StatusCode)
-//			// получаем и проверяем тело запроса
-//			defer res.Body.Close()
-//			resBody, err := io.ReadAll(res.Body)
-//
-//			require.NoError(t, err)
-//			assert.NotEqual(t, "", string(resBody))
-//			assert.Contains(t, res.Header.Get("Content-Type"), test.want.contentType)
-//		})
-//	}
-//}
-//
-//func TestSaveJSONURL(t *testing.T) {
-//	type want struct {
-//		code        int
-//		contentType string
-//		bodyContent string
-//	}
-//
-//	tests := []struct {
-//		name string
-//		want want
-//	}{
-//		{
-//			name: "positive test #1",
-//			want: want{
-//				code:        201,
-//				contentType: "application/json",
-//				bodyContent: `{"url": "http://yandex.ru"}`,
-//			},
-//		},
-//		{
-//			name: "negative test #1",
-//			want: want{
-//				code:        400,
-//				contentType: "text/plain",
-//				bodyContent: `{"url": "yandex.ru"}`,
-//			},
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		t.Run(test.name, func(t *testing.T) {
-//			body := strings.NewReader(test.want.bodyContent)
-//			request := httptest.NewRequest(http.MethodPost, "/api/shorten", body)
-//			// создаём новый Recorder
-//			w := httptest.NewRecorder()
-//			SaveJSONURL(w, request)
-//
-//			res := w.Result()
-//			// проверяем код ответа
-//			assert.Equal(t, test.want.code, res.StatusCode)
-//			// получаем и проверяем тело запроса
-//			defer res.Body.Close()
-//			resBody, err := io.ReadAll(res.Body)
-//
-//			require.NoError(t, err)
-//			assert.NotEqual(t, "", string(resBody))
-//			assert.Contains(t, res.Header.Get("Content-Type"), test.want.contentType)
-//		})
-//	}
-//}
-//
-//func TestGetURL(t *testing.T) {
-//	type want struct {
-//		code        int
-//		contentType string
-//	}
-//
-//	tests := []struct {
-//		name string
-//		want want
-//	}{
-//		{
-//			name: "negative test #1",
-//			want: want{
-//				code:        400,
-//				contentType: "text/plain",
-//			},
-//		},
-//	}
-//
-//	for _, test := range tests {
-//		t.Run(test.name, func(t *testing.T) {
-//			request := httptest.NewRequest(http.MethodPost, "/test", nil)
-//			// создаём новый Recorder
-//			w := httptest.NewRecorder()
-//			GetURL(w, request)
-//
-//			res := w.Result()
-//			// проверяем код ответа
-//			assert.Equal(t, test.want.code, res.StatusCode)
-//			// получаем и проверяем тело запроса
-//			defer res.Body.Close()
-//			assert.Contains(t, res.Header.Get("Content-Type"), test.want.contentType)
-//		})
-//	}
-//}
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/persistence"
+	"github.com/Wrestler094/shortener/internal/services"
+	"github.com/Wrestler094/shortener/internal/storage/memory"
+)
+
+func newTestHandler() *URLHandler {
+	fileStorage := persistence.NewFileStorage("")
+	recoveredUrls := fileStorage.RecoverURLs()
+	store := memory.NewMemoryStorage(recoveredUrls)
+
+	service := services.NewURLService(store, fileStorage)
+	return NewURLHandler(service)
+}
+
+func TestSavePlainURL(t *testing.T) {
+	handler := newTestHandler()
+
+	tests := []struct {
+		name       string
+		body       string
+		wantCode   int
+		wantPrefix string
+	}{
+		{
+			name:       "valid plain URL",
+			body:       "http://yandex.ru",
+			wantCode:   http.StatusCreated,
+			wantPrefix: configs.FlagBaseAddr + "/",
+		},
+		{
+			name:       "invalid plain URL",
+			body:       "yandex.ru",
+			wantCode:   http.StatusBadRequest,
+			wantPrefix: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(tt.body))
+			rec := httptest.NewRecorder()
+
+			handler.SavePlainURL(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			respBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantCode, res.StatusCode)
+			if tt.wantPrefix != "" {
+				assert.True(t, strings.HasPrefix(string(respBody), tt.wantPrefix))
+			}
+		})
+	}
+}
+
+func TestSaveJSONURL(t *testing.T) {
+	handler := newTestHandler()
+
+	tests := []struct {
+		name       string
+		body       string
+		wantCode   int
+		wantField  string
+		wantPrefix string
+	}{
+		{
+			name:       "valid JSON URL",
+			body:       `{"url": "http://yandex.ru"}`,
+			wantCode:   http.StatusCreated,
+			wantField:  `"result":"`,
+			wantPrefix: configs.FlagBaseAddr + "/",
+		},
+		{
+			name:       "invalid JSON URL",
+			body:       `{"url": "yandex.ru"}`,
+			wantCode:   http.StatusBadRequest,
+			wantField:  "",
+			wantPrefix: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPost, "/api/shorten", strings.NewReader(tt.body))
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			handler.SaveJSONURL(rec, req)
+
+			res := rec.Result()
+			defer res.Body.Close()
+
+			respBody, err := io.ReadAll(res.Body)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.wantCode, res.StatusCode)
+
+			if tt.wantField != "" {
+				assert.Contains(t, string(respBody), tt.wantField)
+				assert.Contains(t, string(respBody), tt.wantPrefix)
+			}
+		})
+	}
+}
+
+func TestGetURL(t *testing.T) {
+	handler := newTestHandler()
+
+	t.Run("invalid method", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/bad", nil)
+		rec := httptest.NewRecorder()
+
+		handler.GetURL(rec, req)
+
+		res := rec.Result()
+		defer res.Body.Close()
+
+		assert.Equal(t, http.StatusBadRequest, res.StatusCode)
+	})
+}
