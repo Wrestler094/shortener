@@ -4,8 +4,11 @@ import (
 	"log"
 	"net/http"
 
+	"go.uber.org/zap"
+
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/handlers"
+	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/router"
 	"github.com/Wrestler094/shortener/internal/services"
@@ -26,6 +29,7 @@ func InitApp() *App {
 	if configs.FlagDatabaseDSN != "" {
 		postgresStore, err := postgres.NewPostgresStorage(configs.FlagDatabaseDSN)
 		if err != nil {
+			logger.Log.Fatal("Failed to initialize postgres storage", zap.Error(err))
 			log.Fatal(err)
 		}
 		store = postgresStore

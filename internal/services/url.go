@@ -21,7 +21,7 @@ func NewURLService(s storage.IStorage, fs *persistence.FileStorage) *URLService 
 	return &URLService{storage: s, fileStorage: fs}
 }
 
-func (s *URLService) SaveURL(url string) (string, error) {
+func (s *URLService) SaveURL(url string, userID string) (string, error) {
 	original := strings.TrimSpace(url)
 	if !strings.HasPrefix(original, "http://") && !strings.HasPrefix(original, "https://") {
 		return "", errors.New("invalid URL format")
@@ -33,7 +33,7 @@ func (s *URLService) SaveURL(url string) (string, error) {
 		return "", err
 	}
 
-	err = s.storage.Save(shortID, original)
+	err = s.storage.Save(shortID, original, userID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrURLAlreadyExists) {
 			existingShort, lookupErr := s.storage.FindShortByOriginalURL(original)
@@ -49,11 +49,7 @@ func (s *URLService) SaveURL(url string) (string, error) {
 	return shortID, nil
 }
 
-func (s *URLService) GetURLByID(id string) (string, bool) {
-	return s.storage.Get(id)
-}
-
-func (s *URLService) SaveBatch(batch []dto.BatchRequestItem) ([]dto.BatchResponseItem, error) {
+func (s *URLService) SaveBatch(batch []dto.BatchRequestItem, userID string) ([]dto.BatchResponseItem, error) {
 	var response []dto.BatchResponseItem
 
 	urls := make(map[string]string) // shortURL[originalURL]
@@ -73,7 +69,7 @@ func (s *URLService) SaveBatch(batch []dto.BatchRequestItem) ([]dto.BatchRespons
 	}
 
 	// Сохраняем атомарно
-	err := s.storage.SaveBatch(urls)
+	err := s.storage.SaveBatch(urls, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -84,4 +80,25 @@ func (s *URLService) SaveBatch(batch []dto.BatchRequestItem) ([]dto.BatchRespons
 	}
 
 	return response, nil
+}
+
+func (s *URLService) GetURLByID(id string) (string, bool) {
+	return s.storage.Get(id)
+}
+
+func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
+	rawURLs, err := s.storage.GetUserURLs(uuid)
+	if err != nil {
+		return nil, err
+	}
+
+	urls := make([]dto.UserURLItem, 0, len(rawURLs))
+	for _, r := range rawURLs {
+		urls = append(urls, dto.UserURLItem{
+			ShortURL:    configs.FlagBaseAddr + "/" + r.ShortURL,
+			OriginalURL: r.OriginalURL,
+		})
+	}
+
+	return urls, nil
 }

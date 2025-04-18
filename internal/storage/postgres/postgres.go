@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -16,6 +15,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 
+	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/logger"
 )
 
@@ -36,10 +36,10 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	return &PostgresStorage{db: db}, nil
 }
 
-func (ps *PostgresStorage) Save(shortID, originalURL string) error {
+func (ps *PostgresStorage) Save(shortID, originalURL, userID string) error {
 	_, err := ps.db.ExecContext(context.Background(),
-		`INSERT INTO urls (short_url, original_url) VALUES ($1, $2)`,
-		shortID, originalURL)
+		`INSERT INTO urls (short_url, original_url, user_id) VALUES ($1, $2, $3)`,
+		shortID, originalURL, userID)
 
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -52,7 +52,7 @@ func (ps *PostgresStorage) Save(shortID, originalURL string) error {
 	return nil
 }
 
-func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
+func (ps *PostgresStorage) SaveBatch(urls map[string]string, userID string) error {
 	if len(urls) == 0 {
 		return nil
 	}
@@ -63,15 +63,14 @@ func (ps *PostgresStorage) SaveBatch(urls map[string]string) error {
 		i       = 1
 	)
 
-	builder.WriteString("INSERT INTO urls (short_url, original_url) VALUES ")
+	builder.WriteString("INSERT INTO urls (short_url, original_url, user_id) VALUES ")
 
 	for short, orig := range urls {
-		builder.WriteString(fmt.Sprintf("($%d, $%d),", i, i+1))
-		params = append(params, short, orig)
-		i += 2
+		builder.WriteString(fmt.Sprintf("($%d, $%d, $%d),", i, i+1, i+2))
+		params = append(params, short, orig, userID)
+		i += 3
 	}
 
-	// fixme: ...
 	query := strings.TrimSuffix(builder.String(), ",") + " ON CONFLICT (short_url) DO NOTHING"
 
 	_, err := ps.db.ExecContext(context.Background(), query, params...)
@@ -101,6 +100,30 @@ func (ps *PostgresStorage) Get(shortID string) (string, bool) {
 	return originalURL, true
 }
 
+func (ps *PostgresStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
+	rows, err := ps.db.QueryContext(context.Background(),
+		`SELECT short_url, original_url FROM urls WHERE user_id = $1`, uuid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []dto.UserURLItem
+	for rows.Next() {
+		var item dto.UserURLItem
+		if err := rows.Scan(&item.ShortURL, &item.OriginalURL); err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (ps *PostgresStorage) FindShortByOriginalURL(originalURL string) (string, error) {
 	var short string
 	err := ps.db.QueryRowContext(context.Background(),
@@ -127,7 +150,7 @@ func connect(dsn string) (*sql.DB, error) {
 		return nil, fmt.Errorf("failed to ping postgres db: %w", err)
 	}
 
-	log.Println("Connected to PostgreSQL using pgx.")
+	logger.Log.Info("Successfully connected to postgres database")
 
 	return db, nil
 }
@@ -142,7 +165,7 @@ func migrateDB(dsn string) error {
 		return fmt.Errorf("failed to apply db migration: %w", err)
 	}
 
-	log.Println("Migrations applied successfully.")
+	logger.Log.Info("Successfully applied db migration")
 
 	return nil
 }

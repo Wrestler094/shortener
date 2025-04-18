@@ -7,10 +7,15 @@ import (
 	"net/http"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/dto"
+	"github.com/Wrestler094/shortener/internal/logger"
+	"github.com/Wrestler094/shortener/internal/middlewares"
 	"github.com/Wrestler094/shortener/internal/services"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
+	"github.com/Wrestler094/shortener/internal/utils"
 )
 
 type ShortenRequest struct {
@@ -43,19 +48,13 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	shortID, err := h.service.SaveURL(shortenRequest.URL)
+	userID, _ := middlewares.GetUserIDFromContext(req.Context())
+	shortID, err := h.service.SaveURL(shortenRequest.URL, userID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrURLAlreadyExists) {
-			res.Header().Set("Content-Type", "application/json")
-			res.WriteHeader(http.StatusConflict)
-			responseBody, err := json.Marshal(ShortenResponse{
+			utils.WriteJSON(res, http.StatusConflict, ShortenResponse{
 				Result: configs.FlagBaseAddr + "/" + shortID,
 			})
-			if err != nil {
-				http.Error(res, "Failed to encode response", http.StatusInternalServerError)
-				return
-			}
-			res.Write(responseBody)
 			return
 		}
 
@@ -63,16 +62,9 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusCreated)
-	responseBody, err := json.Marshal(ShortenResponse{
+	utils.WriteJSON(res, http.StatusCreated, ShortenResponse{
 		Result: configs.FlagBaseAddr + "/" + shortID,
 	})
-	if err != nil {
-		http.Error(res, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-	res.Write(responseBody)
 }
 
 func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
@@ -82,7 +74,8 @@ func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	shortID, err := h.service.SaveURL(string(body))
+	userID, _ := middlewares.GetUserIDFromContext(req.Context())
+	shortID, err := h.service.SaveURL(string(body), userID)
 	if err != nil {
 		if errors.Is(err, postgres.ErrURLAlreadyExists) {
 			res.Header().Set("Content-Type", "text/plain")
@@ -97,6 +90,31 @@ func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "text/plain")
 	res.WriteHeader(http.StatusCreated)
 	res.Write([]byte(configs.FlagBaseAddr + "/" + shortID))
+}
+
+func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
+	var batch []dto.BatchRequestItem
+
+	body, err := io.ReadAll(req.Body)
+	if err != nil {
+		http.Error(res, "Failed to read request", http.StatusBadRequest)
+		return
+	}
+	defer req.Body.Close()
+
+	if err := json.Unmarshal(body, &batch); err != nil || len(batch) == 0 {
+		http.Error(res, "Invalid JSON or empty batch", http.StatusBadRequest)
+		return
+	}
+
+	userID, _ := middlewares.GetUserIDFromContext(req.Context())
+	result, err := h.service.SaveBatch(batch, userID)
+	if err != nil {
+		http.Error(res, "Failed to process batch", http.StatusInternalServerError)
+		return
+	}
+
+	utils.WriteJSON(res, http.StatusCreated, result)
 }
 
 func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
@@ -118,35 +136,24 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 	res.WriteHeader(http.StatusTemporaryRedirect)
 }
 
-func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
-	var batch []dto.BatchRequestItem
+func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
+	userID, ok := middlewares.GetUserIDFromContext(req.Context())
+	if !ok || userID == "" {
+		http.Error(res, "unauthorized", http.StatusUnauthorized)
+		return
+	}
 
-	body, err := io.ReadAll(req.Body)
+	userURLs, err := h.service.GetUserURLs(userID)
 	if err != nil {
-		http.Error(res, "Failed to read request", http.StatusBadRequest)
-		return
-	}
-	defer req.Body.Close()
-
-	if err := json.Unmarshal(body, &batch); err != nil || len(batch) == 0 {
-		http.Error(res, "Invalid JSON or empty batch", http.StatusBadRequest)
+		logger.Log.Error("Failed to get user URLs", zap.Error(err))
+		http.Error(res, "internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	result, err := h.service.SaveBatch(batch)
-	if err != nil {
-		http.Error(res, "Failed to process batch", http.StatusInternalServerError)
+	if len(userURLs) == 0 {
+		res.WriteHeader(http.StatusNoContent)
 		return
 	}
 
-	res.Header().Set("Content-Type", "application/json")
-	res.WriteHeader(http.StatusCreated)
-
-	responseBody, err := json.Marshal(result)
-	if err != nil {
-		http.Error(res, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-
-	res.Write(responseBody)
+	utils.WriteJSON(res, http.StatusOK, userURLs)
 }

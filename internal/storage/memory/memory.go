@@ -3,6 +3,8 @@ package memory
 import (
 	"fmt"
 	"sync"
+
+	"github.com/Wrestler094/shortener/internal/dto"
 )
 
 type MemoryStorage struct {
@@ -14,7 +16,7 @@ func NewMemoryStorage(recoveredUrls map[string]string) *MemoryStorage {
 	return &MemoryStorage{storage: recoveredUrls}
 }
 
-func (ms *MemoryStorage) Save(shortURL string, originalURL string) error {
+func (ms *MemoryStorage) Save(shortURL string, originalURL string, _ string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -22,7 +24,7 @@ func (ms *MemoryStorage) Save(shortURL string, originalURL string) error {
 	return nil
 }
 
-func (ms *MemoryStorage) SaveBatch(batch map[string]string) error {
+func (ms *MemoryStorage) SaveBatch(batch map[string]string, _ string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -39,6 +41,14 @@ func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
 
 	url, ok := ms.storage[shortURL]
 	return url, ok
+}
+
+func (ms *MemoryStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	fmt.Println(uuid)
+	return make([]dto.UserURLItem, 0), nil
 }
 
 func (ms *MemoryStorage) FindShortByOriginalURL(originalURL string) (string, error) {
