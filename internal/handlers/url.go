@@ -113,7 +113,7 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 }
 
 func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
-	cookie, err := req.Cookie("auth_token")
+	cookie, err := req.Cookie(utils.CookieName)
 	if err != nil {
 		http.Error(res, "unauthorized", http.StatusUnauthorized)
 		return

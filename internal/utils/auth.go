@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	cookieName   = "auth_token"
+	CookieName   = "auth_token"
 	cookieKey    = "supersecret" // замените на ваш конфиг или env
 	cookieMaxAge = 3600 * 24 * 365
 )
@@ -49,7 +49,7 @@ func ValidateSignedValue(signed string) (string, bool) {
 }
 
 func EnsureUserCookie(w http.ResponseWriter, r *http.Request) string {
-	c, err := r.Cookie(cookieName)
+	c, err := r.Cookie(CookieName)
 	if err == nil {
 		if userID, valid := ValidateSignedValue(c.Value); valid {
 			return userID
@@ -59,7 +59,7 @@ func EnsureUserCookie(w http.ResponseWriter, r *http.Request) string {
 	// Кука отсутствует или повреждена — выдаём новую
 	userID := GenerateUserID()
 	http.SetCookie(w, &http.Cookie{
-		Name:     cookieName,
+		Name:     CookieName,
 		Value:    CreateSignedValue(userID),
 		Path:     "/",
 		MaxAge:   cookieMaxAge,

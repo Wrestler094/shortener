@@ -3,6 +3,8 @@ package memory
 import (
 	"fmt"
 	"sync"
+
+	"github.com/Wrestler094/shortener/internal/dto"
 )
 
 type MemoryStorage struct {
@@ -39,6 +41,14 @@ func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
 
 	url, ok := ms.storage[shortURL]
 	return url, ok
+}
+
+func (ms *MemoryStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
+	ms.mu.RLock()
+	defer ms.mu.RUnlock()
+
+	fmt.Println(uuid)
+	return make([]dto.UserURLItem, 0), nil
 }
 
 func (ms *MemoryStorage) FindShortByOriginalURL(originalURL string) (string, error) {

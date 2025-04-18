@@ -2,7 +2,6 @@ package services
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/Wrestler094/shortener/internal/configs"
@@ -55,8 +54,19 @@ func (s *URLService) GetURLByID(id string) (string, bool) {
 }
 
 func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
-	var urls []dto.UserURLItem
-	fmt.Println(uuid)
+	rawURLs, err := s.storage.GetUserURLs(uuid)
+	if err != nil {
+		return nil, err
+	}
+
+	urls := make([]dto.UserURLItem, 0, len(rawURLs))
+	for _, r := range rawURLs {
+		urls = append(urls, dto.UserURLItem{
+			ShortURL:    configs.FlagBaseAddr + "/" + r.ShortURL,
+			OriginalURL: r.OriginalURL,
+		})
+	}
+
 	return urls, nil
 }
 

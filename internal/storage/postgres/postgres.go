@@ -16,6 +16,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"go.uber.org/zap"
 
+	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/logger"
 )
 
@@ -99,6 +100,25 @@ func (ps *PostgresStorage) Get(shortID string) (string, bool) {
 	}
 
 	return originalURL, true
+}
+
+func (ps *PostgresStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
+	rows, err := ps.db.QueryContext(context.Background(),
+		`SELECT short_url, original_url FROM urls WHERE user_id = $1`, uuid)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []dto.UserURLItem
+	for rows.Next() {
+		var item dto.UserURLItem
+		if err := rows.Scan(&item.ShortURL, &item.OriginalURL); err != nil {
+			return nil, err
+		}
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func (ps *PostgresStorage) FindShortByOriginalURL(originalURL string) (string, error) {
