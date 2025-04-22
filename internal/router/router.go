@@ -24,6 +24,7 @@ func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 	r.Post("/api/shorten/batch", handlers.URLHandler.SaveBatchURLs)
 
 	r.Get("/api/user/urls", handlers.URLHandler.GetUserURLs)
+	r.Delete("/api/user/urls", handlers.URLHandler.DeleteUserURLs)
 
 	return r
 }

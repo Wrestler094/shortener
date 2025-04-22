@@ -82,22 +82,24 @@ func (ps *PostgresStorage) SaveBatch(urls map[string]string, userID string) erro
 	return nil
 }
 
-func (ps *PostgresStorage) Get(shortID string) (string, bool) {
+func (ps *PostgresStorage) Get(shortID string) (string, bool, bool) {
 	var originalURL string
+	var isDeleted bool
+
 	err := ps.db.QueryRowContext(
 		context.Background(),
-		`SELECT original_url FROM urls WHERE short_url = $1 ORDER BY id DESC LIMIT 1`,
+		`SELECT original_url, is_deleted FROM urls WHERE short_url = $1 ORDER BY id DESC LIMIT 1`,
 		shortID,
-	).Scan(&originalURL)
+	).Scan(&originalURL, &isDeleted)
 
 	if err == sql.ErrNoRows {
-		return "", false
+		return "", false, false
 	} else if err != nil {
-		logger.Log.Error("Error of open file", zap.Error(err))
-		return "", false
+		logger.Log.Error("Error of get url from db", zap.Error(err))
+		return "", false, false
 	}
 
-	return originalURL, true
+	return originalURL, isDeleted, true
 }
 
 func (ps *PostgresStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
@@ -122,6 +124,30 @@ func (ps *PostgresStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	}
 
 	return result, nil
+}
+
+func (ps *PostgresStorage) DeleteUserURLs(userID string, uuids []string) error {
+	if len(uuids) == 0 {
+		return nil
+	}
+
+	var (
+		params  = make([]interface{}, 0, len(uuids)+1)
+		builder strings.Builder
+	)
+
+	params = append(params, userID)
+	builder.WriteString("UPDATE urls SET is_deleted = true WHERE user_id = $1 AND short_url IN (")
+
+	for i := range uuids {
+		builder.WriteString(fmt.Sprintf("$%d,", i+2))
+		params = append(params, uuids[i])
+	}
+
+	query := strings.TrimSuffix(builder.String(), ",") + ")"
+	_, err := ps.db.ExecContext(context.Background(), query, params...)
+	return err
+
 }
 
 func (ps *PostgresStorage) FindShortByOriginalURL(originalURL string) (string, error) {

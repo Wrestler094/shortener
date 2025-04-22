@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/deleter"
 	"github.com/Wrestler094/shortener/internal/dto"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/storage"
@@ -15,10 +16,11 @@ import (
 type URLService struct {
 	storage     storage.IStorage
 	fileStorage *persistence.FileStorage
+	deleter     deleter.Deleter
 }
 
-func NewURLService(s storage.IStorage, fs *persistence.FileStorage) *URLService {
-	return &URLService{storage: s, fileStorage: fs}
+func NewURLService(s storage.IStorage, fs *persistence.FileStorage, dl deleter.Deleter) *URLService {
+	return &URLService{storage: s, fileStorage: fs, deleter: dl}
 }
 
 func (s *URLService) SaveURL(url string, userID string) (string, error) {
@@ -82,7 +84,7 @@ func (s *URLService) SaveBatch(batch []dto.BatchRequestItem, userID string) ([]d
 	return response, nil
 }
 
-func (s *URLService) GetURLByID(id string) (string, bool) {
+func (s *URLService) GetURLByID(id string) (string, bool, bool) {
 	return s.storage.Get(id)
 }
 
@@ -101,4 +103,16 @@ func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	}
 
 	return urls, nil
+}
+
+func (s *URLService) DeleteUserURLs(userID string, urls []string) error {
+	if len(urls) == 0 {
+		return nil
+	}
+
+	for _, shortID := range urls {
+		s.deleter.QueueForDeletion(shortID, userID)
+	}
+
+	return nil
 }

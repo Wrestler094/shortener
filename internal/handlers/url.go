@@ -126,9 +126,14 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	url, ok := h.service.GetURLByID(urlParts[0])
+	url, isDeleted, ok := h.service.GetURLByID(urlParts[0])
 	if !ok {
 		http.Error(res, "shorten URL not found", http.StatusBadRequest)
+		return
+	}
+
+	if isDeleted {
+		res.WriteHeader(http.StatusGone)
 		return
 	}
 
@@ -156,4 +161,25 @@ func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
 	}
 
 	utils.WriteJSON(res, http.StatusOK, userURLs)
+}
+
+func (h *URLHandler) DeleteUserURLs(res http.ResponseWriter, req *http.Request) {
+	var urlForDelete []string
+
+	defer req.Body.Close()
+	if err := json.NewDecoder(req.Body).Decode(&urlForDelete); err != nil {
+		logger.Log.Error("Failed to decode request DeleteUserURLs", zap.Error(err))
+		http.Error(res, "Invalid JSON", http.StatusBadRequest)
+		return
+	}
+
+	userID, _ := middlewares.GetUserIDFromContext(req.Context())
+	err := h.service.DeleteUserURLs(userID, urlForDelete)
+	if err != nil {
+		logger.Log.Error("Failed to delete user URLs", zap.Error(err))
+		http.Error(res, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	res.WriteHeader(http.StatusAccepted)
 }
