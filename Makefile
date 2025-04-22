@@ -11,6 +11,20 @@ LOCAL_MODULE = github.com/Wrestler094/shortener
 
 all: fmt imports build
 
+# Сборка бинарного файла
+build:
+	@go build -o $(BINARY_NAME) $(ENTRY)
+
+rebuild: clean build
+
+# Запуск приложения
+run:
+	@go run $(ENTRY)
+
+# Удаление скомпилированного бинарника
+clean:
+	@rm -f $(BINARY_NAME)
+
 # Форматирование кода с gofmt
 fmt:
 	@gofmt -s -w .
@@ -19,10 +33,10 @@ fmt:
 imports:
 	@goimports -w -local $(LOCAL_MODULE) .
 
-# Сборка бинарного файла
-build:
-	@go build -o $(BINARY_NAME) $(ENTRY)
+# Запуск всех тестов
+test:
+	@go test -v ./...
 
-# Запуск приложения
-run:
-	@go run $(ENTRY)
+# Очистка go модулей и зависимостей
+tidy:
+	@go mod tidy
