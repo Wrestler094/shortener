@@ -3,10 +3,12 @@ package app
 import (
 	"log"
 	"net/http"
+	"time"
 
 	"go.uber.org/zap"
 
 	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/deleter"
 	"github.com/Wrestler094/shortener/internal/handlers"
 	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/persistence"
@@ -38,8 +40,11 @@ func InitApp() *App {
 		store = memory.NewMemoryStorage(recoveredUrls)
 	}
 
+	urlDeleter := deleter.NewURLDeleter(store, time.Second*10)
+	urlDeleter.StartBackgroundFlusher()
+
 	// Инициализация сервисов
-	urlService := services.NewURLService(store, fileStorage)
+	urlService := services.NewURLService(store, fileStorage, urlDeleter)
 
 	// Инициализация хендлеров
 	urlHandler := handlers.NewURLHandler(urlService)

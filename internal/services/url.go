@@ -4,11 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"go.uber.org/zap"
-
 	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/deleter"
 	"github.com/Wrestler094/shortener/internal/dto"
-	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/storage"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
@@ -18,10 +16,11 @@ import (
 type URLService struct {
 	storage     storage.IStorage
 	fileStorage *persistence.FileStorage
+	deleter     deleter.Deleter
 }
 
-func NewURLService(s storage.IStorage, fs *persistence.FileStorage) *URLService {
-	return &URLService{storage: s, fileStorage: fs}
+func NewURLService(s storage.IStorage, fs *persistence.FileStorage, dl deleter.Deleter) *URLService {
+	return &URLService{storage: s, fileStorage: fs, deleter: dl}
 }
 
 func (s *URLService) SaveURL(url string, userID string) (string, error) {
@@ -111,27 +110,9 @@ func (s *URLService) DeleteUserURLs(userID string, urls []string) error {
 		return nil
 	}
 
-	// MVP
-	go func() {
-		err := s.storage.DeleteUserURLs(userID, urls)
-		if err != nil {
-			logger.Log.Error("Async delete failed", zap.Error(err))
-		}
-	}()
+	for _, shortID := range urls {
+		s.deleter.QueueForDeletion(shortID, userID)
+	}
 
 	return nil
-
-	// FanIn
-	// Создать генератор
-
-	// Проверять ...
-	// Успешно удалить URL может пользователь, его создавший.
-
-	// Собирать ...
-
-	// Делать batch ~(раз в 10 секунд)
-	//err := s.storage.DeleteUserURLs(userID, urls)
-	//if err != nil {
-	//	return err
-	//}
 }
