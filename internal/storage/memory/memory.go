@@ -35,12 +35,12 @@ func (ms *MemoryStorage) SaveBatch(batch map[string]string, _ string) error {
 	return nil
 }
 
-func (ms *MemoryStorage) Get(shortURL string) (string, bool) {
+func (ms *MemoryStorage) Get(shortURL string) (string, bool, bool) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
 	url, ok := ms.storage[shortURL]
-	return url, ok
+	return url, false, ok
 }
 
 func (ms *MemoryStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
@@ -49,6 +49,10 @@ func (ms *MemoryStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 
 	fmt.Println(uuid)
 	return make([]dto.UserURLItem, 0), nil
+}
+
+func (ms *MemoryStorage) DeleteUserURLs(_ string, _ []string) error {
+	return nil
 }
 
 func (ms *MemoryStorage) FindShortByOriginalURL(originalURL string) (string, error) {

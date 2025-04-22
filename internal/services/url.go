@@ -4,8 +4,11 @@ import (
 	"errors"
 	"strings"
 
+	"go.uber.org/zap"
+
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/dto"
+	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/storage"
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
@@ -82,7 +85,7 @@ func (s *URLService) SaveBatch(batch []dto.BatchRequestItem, userID string) ([]d
 	return response, nil
 }
 
-func (s *URLService) GetURLByID(id string) (string, bool) {
+func (s *URLService) GetURLByID(id string) (string, bool, bool) {
 	return s.storage.Get(id)
 }
 
@@ -101,4 +104,34 @@ func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	}
 
 	return urls, nil
+}
+
+func (s *URLService) DeleteUserURLs(userID string, urls []string) error {
+	if len(urls) == 0 {
+		return nil
+	}
+
+	// MVP
+	go func() {
+		err := s.storage.DeleteUserURLs(userID, urls)
+		if err != nil {
+			logger.Log.Error("Async delete failed", zap.Error(err))
+		}
+	}()
+
+	return nil
+
+	// FanIn
+	// Создать генератор
+
+	// Проверять ...
+	// Успешно удалить URL может пользователь, его создавший.
+
+	// Собирать ...
+
+	// Делать batch ~(раз в 10 секунд)
+	//err := s.storage.DeleteUserURLs(userID, urls)
+	//if err != nil {
+	//	return err
+	//}
 }

@@ -8,9 +8,10 @@ import (
 
 type IStorage interface {
 	Save(string, string, string) error
-	Get(string) (string, bool)
-	GetUserURLs(string) ([]dto.UserURLItem, error)
 	SaveBatch(map[string]string, string) error
+	Get(string) (string, bool, bool)
+	GetUserURLs(string) ([]dto.UserURLItem, error)
+	DeleteUserURLs(string, []string) error
 	FindShortByOriginalURL(string) (string, error)
 }
 
