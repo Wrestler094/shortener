@@ -6,11 +6,13 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/Wrestler094/shortener/internal/configs"
+	"github.com/Wrestler094/shortener/internal/deleter"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/services"
 	"github.com/Wrestler094/shortener/internal/storage/memory"
@@ -20,8 +22,9 @@ func newTestHandler() *URLHandler {
 	fileStorage := persistence.NewFileStorage("")
 	recoveredUrls := fileStorage.RecoverURLs()
 	store := memory.NewMemoryStorage(recoveredUrls)
+	urlDeleter := deleter.NewURLDeleter(store, time.Second)
 
-	service := services.NewURLService(store, fileStorage)
+	service := services.NewURLService(store, fileStorage, urlDeleter)
 	return NewURLHandler(service)
 }
 
