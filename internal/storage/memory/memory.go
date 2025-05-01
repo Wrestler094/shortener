@@ -47,7 +47,6 @@ func (ms *MemoryStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
-	fmt.Println(uuid)
 	return make([]dto.UserURLItem, 0), nil
 }
 
