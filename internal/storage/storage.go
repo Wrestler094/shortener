@@ -4,6 +4,13 @@ import (
 	"context"
 
 	"github.com/Wrestler094/shortener/internal/dto"
+	"github.com/Wrestler094/shortener/internal/storage/memory"
+	"github.com/Wrestler094/shortener/internal/storage/postgres"
+)
+
+var (
+	_ IStorage = (*postgres.PostgresStorage)(nil)
+	_ IStorage = (*memory.MemoryStorage)(nil)
 )
 
 type IStorage interface {
