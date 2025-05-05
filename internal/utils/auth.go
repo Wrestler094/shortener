@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// Константы для работы с аутентификацией пользователей через cookie.
 const (
 	// CookieName - имя cookie для хранения токена аутентификации
 	CookieName = "auth_token"
