@@ -19,10 +19,17 @@ import (
 	"github.com/Wrestler094/shortener/internal/storage/postgres"
 )
 
+// App представляет основную структуру приложения
 type App struct {
-	Router http.Handler
+	Router http.Handler // HTTP-роутер приложения
 }
 
+// InitApp инициализирует приложение, создавая все необходимые зависимости:
+// 1. Выбирает и инициализирует хранилище (PostgreSQL или память)
+// 2. Создает сервис для работы с URL
+// 3. Создает обработчики HTTP-запросов
+// 4. Инициализирует роутер
+// Возвращает экземпляр приложения с настроенным роутером
 func InitApp() *App {
 	// Выбор хранилища (можно сюда добавить file/postgres)
 	var fileStorage = persistence.NewFileStorage(configs.FlagFileStoragePath)

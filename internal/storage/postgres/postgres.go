@@ -19,10 +19,14 @@ import (
 	"github.com/Wrestler094/shortener/internal/logger"
 )
 
+// PostgresStorage реализует хранилище URL в PostgreSQL
 type PostgresStorage struct {
-	db *sql.DB
+	db *sql.DB // Подключение к базе данных
 }
 
+// NewPostgresStorage создает новый экземпляр хранилища PostgreSQL
+// dsn - строка подключения к базе данных
+// Выполняет подключение к базе данных и применяет миграции
 func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	db, err := connect(dsn)
 	if err != nil {
@@ -36,6 +40,11 @@ func NewPostgresStorage(dsn string) (*PostgresStorage, error) {
 	return &PostgresStorage{db: db}, nil
 }
 
+// Save сохраняет пару сокращенный URL - оригинальный URL в базе данных
+// shortID - сокращенный URL
+// originalURL - оригинальный URL
+// userID - идентификатор пользователя
+// Возвращает ErrURLAlreadyExists, если URL уже существует
 func (ps *PostgresStorage) Save(shortID, originalURL, userID string) error {
 	_, err := ps.db.ExecContext(context.Background(),
 		`INSERT INTO urls (short_url, original_url, user_id) VALUES ($1, $2, $3)`,
@@ -52,6 +61,10 @@ func (ps *PostgresStorage) Save(shortID, originalURL, userID string) error {
 	return nil
 }
 
+// SaveBatch сохраняет пакет URL в базе данных
+// urls - карта сокращенных URL к оригинальным URL
+// userID - идентификатор пользователя
+// При конфликте по short_url операция пропускается
 func (ps *PostgresStorage) SaveBatch(urls map[string]string, userID string) error {
 	if len(urls) == 0 {
 		return nil
@@ -82,6 +95,12 @@ func (ps *PostgresStorage) SaveBatch(urls map[string]string, userID string) erro
 	return nil
 }
 
+// Get возвращает оригинальный URL по сокращенному
+// shortID - сокращенный URL
+// Возвращает:
+// - оригинальный URL
+// - флаг удаления
+// - флаг наличия URL в хранилище
 func (ps *PostgresStorage) Get(shortID string) (string, bool, bool) {
 	var originalURL string
 	var isDeleted bool
@@ -102,6 +121,9 @@ func (ps *PostgresStorage) Get(shortID string) (string, bool, bool) {
 	return originalURL, isDeleted, true
 }
 
+// GetUserURLs возвращает список URL пользователя
+// uuid - идентификатор пользователя
+// Возвращает список пар сокращенный URL - оригинальный URL
 func (ps *PostgresStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	rows, err := ps.db.QueryContext(context.Background(),
 		`SELECT short_url, original_url FROM urls WHERE user_id = $1`, uuid)
@@ -126,6 +148,9 @@ func (ps *PostgresStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	return result, nil
 }
 
+// DeleteUserURLs помечает URL пользователя как удаленные
+// userID - идентификатор пользователя
+// uuids - список сокращенных URL для удаления
 func (ps *PostgresStorage) DeleteUserURLs(userID string, uuids []string) error {
 	if len(uuids) == 0 {
 		return nil
@@ -147,9 +172,11 @@ func (ps *PostgresStorage) DeleteUserURLs(userID string, uuids []string) error {
 	query := strings.TrimSuffix(builder.String(), ",") + ")"
 	_, err := ps.db.ExecContext(context.Background(), query, params...)
 	return err
-
 }
 
+// FindShortByOriginalURL ищет сокращенный URL по оригинальному
+// originalURL - оригинальный URL
+// Возвращает сокращенный URL или ошибку, если URL не найден
 func (ps *PostgresStorage) FindShortByOriginalURL(originalURL string) (string, error) {
 	var short string
 	err := ps.db.QueryRowContext(context.Background(),
@@ -162,10 +189,14 @@ func (ps *PostgresStorage) FindShortByOriginalURL(originalURL string) (string, e
 	return short, nil
 }
 
+// Ping проверяет соединение с базой данных
+// ctx - контекст для выполнения запроса
 func (ps *PostgresStorage) Ping(ctx context.Context) error {
 	return ps.db.PingContext(ctx)
 }
 
+// connect устанавливает соединение с базой данных PostgreSQL
+// dsn - строка подключения к базе данных
 func connect(dsn string) (*sql.DB, error) {
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
@@ -181,6 +212,8 @@ func connect(dsn string) (*sql.DB, error) {
 	return db, nil
 }
 
+// migrateDB применяет миграции к базе данных
+// dsn - строка подключения к базе данных
 func migrateDB(dsn string) error {
 	m, err := migrate.New("file://migrations", dsn)
 	if err != nil {
