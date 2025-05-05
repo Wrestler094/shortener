@@ -1,3 +1,10 @@
+// Реализация хранения URL в файловой системе.
+// Обеспечивает персистентное хранение пар сокращенных и оригинальных URL
+// в JSON-формате с поддержкой:
+// - Атомарной записи новых URL
+// - Восстановления данных при перезапуске
+// - Потокобезопасного доступа к файлу
+// - Логирования ошибок операций с файлом
 package persistence
 
 import (
@@ -12,15 +19,22 @@ import (
 	"github.com/Wrestler094/shortener/internal/logger"
 )
 
+// FileStorage реализует хранение URL в файле
 type FileStorage struct {
-	path string
-	mu   sync.Mutex
+	path string     // Путь к файлу для хранения URL
+	mu   sync.Mutex // Мьютекс для синхронизации доступа к файлу
 }
 
+// NewFileStorage создает новый экземпляр FileStorage
+// path - путь к файлу для хранения URL
 func NewFileStorage(path string) *FileStorage {
 	return &FileStorage{path: path}
 }
 
+// SaveURL сохраняет пару сокращенный URL - оригинальный URL в файл
+// shortURL - сокращенный URL
+// originalURL - оригинальный URL
+// Если путь к файлу не указан, операция игнорируется
 func (fs *FileStorage) SaveURL(shortURL, originalURL string) {
 	if fs.path == "" {
 		return
@@ -51,11 +65,15 @@ func (fs *FileStorage) SaveURL(shortURL, originalURL string) {
 	}
 }
 
+// URLEntry представляет запись URL в файле
 type URLEntry struct {
-	ShortURL    string `json:"short_url"`
-	OriginalURL string `json:"original_url"`
+	ShortURL    string `json:"short_url"`    // Сокращенный URL
+	OriginalURL string `json:"original_url"` // Оригинальный URL
 }
 
+// RecoverURLs восстанавливает URL из файла
+// Возвращает карту сокращенных URL к оригинальным URL
+// Если путь к файлу не указан или произошла ошибка, возвращает пустую карту
 func (fs *FileStorage) RecoverURLs() map[string]string {
 	result := make(map[string]string)
 

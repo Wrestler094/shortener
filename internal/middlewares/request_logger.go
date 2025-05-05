@@ -1,3 +1,13 @@
+// Middleware для детального логирования HTTP-запросов.
+// Основные возможности:
+// - Логирование всех входящих HTTP-запросов с использованием структурированного логгера zap
+// - Сбор метрик производительности (время выполнения запроса)
+// - Отслеживание размера ответа и HTTP-статуса
+// - Перехват и модификация ответа без изменения его содержимого
+//
+// Middleware использует кастомный ResponseWriter для перехвата информации
+// об ответе, сохраняя при этом все оригинальные возможности стандартного
+// http.ResponseWriter.
 package middlewares
 
 import (
@@ -10,32 +20,37 @@ import (
 	"github.com/Wrestler094/shortener/internal/logger"
 )
 
-// берём структуру для хранения сведений об ответе
+// responseData хранит информацию об ответе HTTP-сервера
 type responseData struct {
-	status int
-	size   int
+	status int // HTTP-статус ответа
+	size   int // Размер тела ответа в байтах
 }
 
-// добавляем реализацию http.ResponseWriter
+// loggingResponseWriter реализует интерфейс http.ResponseWriter
+// и позволяет перехватывать информацию об ответе
 type loggingResponseWriter struct {
-	http.ResponseWriter // встраиваем оригинальный http.ResponseWriter
-	responseData        *responseData
+	http.ResponseWriter               // Встраиваем оригинальный http.ResponseWriter
+	responseData        *responseData // Данные об ответе
 }
 
+// Write записывает данные в ответ и обновляет размер ответа
+// b - данные для записи
+// Возвращает количество записанных байт и ошибку
 func (r *loggingResponseWriter) Write(b []byte) (int, error) {
-	// записываем ответ, используя оригинальный http.ResponseWriter
 	size, err := r.ResponseWriter.Write(b)
-	r.responseData.size += size // захватываем размер
+	r.responseData.size += size
 	return size, err
 }
 
+// WriteHeader устанавливает HTTP-статус ответа
+// statusCode - код HTTP-статуса
 func (r *loggingResponseWriter) WriteHeader(statusCode int) {
-	// записываем код статуса, используя оригинальный http.ResponseWriter
 	r.ResponseWriter.WriteHeader(statusCode)
-	r.responseData.status = statusCode // захватываем код статуса
+	r.responseData.status = statusCode
 }
 
-// RequestLogger — middleware-логер для входящих HTTP-запросов.
+// RequestLogger - middleware для логирования входящих HTTP-запросов
+// Логирует метод, путь, длительность обработки, статус и размер ответа
 func RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		responseData := &responseData{

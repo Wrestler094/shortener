@@ -8,6 +8,16 @@ import (
 	"github.com/Wrestler094/shortener/internal/middlewares"
 )
 
+// InitRouter инициализирует и настраивает HTTP-роутер приложения
+// handlers - обработчики HTTP-запросов
+// Возвращает настроенный роутер со следующими маршрутами:
+// - POST / - сохранение URL в текстовом формате
+// - GET /{id} - получение оригинального URL по сокращенному
+// - GET /ping - проверка доступности хранилища
+// - POST /api/shorten - сохранение URL в JSON формате
+// - POST /api/shorten/batch - пакетное сохранение URL
+// - GET /api/user/urls - получение списка URL пользователя
+// - DELETE /api/user/urls - удаление URL пользователя
 func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 	r := chi.NewRouter()
 
