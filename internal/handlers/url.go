@@ -20,12 +20,12 @@ import (
 
 // ShortenRequest представляет структуру запроса на сокращение URL
 type ShortenRequest struct {
-	URL string `json:"url"` // URL для сокращения
+	URL string `json:"url" example:"https://example.com"` // URL для сокращения
 }
 
 // ShortenResponse представляет структуру ответа с сокращенным URL
 type ShortenResponse struct {
-	Result string `json:"result"` // Сокращенный URL
+	Result string `json:"result" example:"http://localhost:8080/abc123"` // Сокращенный URL
 }
 
 // URLHandler обрабатывает HTTP-запросы, связанные с URL
@@ -44,6 +44,17 @@ func NewURLHandler(service *services.URLService) *URLHandler {
 // - 201: URL успешно сокращен
 // - 400: Неверный формат запроса
 // - 409: URL уже существует
+//
+// @Summary Сохранить URL в формате JSON
+// @Description Сохраняет URL и возвращает его сокращенную версию
+// @Tags URL
+// @Accept json
+// @Produce json
+// @Param request body ShortenRequest true "URL для сокращения"
+// @Success 201 {object} ShortenResponse
+// @Success 409 {object} ShortenResponse
+// @Failure 400 {string} string "Неверный формат запроса"
+// @Router /api/shorten [post]
 func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	var shortenRequest ShortenRequest
 
@@ -83,6 +94,17 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 // - 201: URL успешно сокращен
 // - 400: Неверный формат запроса
 // - 409: URL уже существует
+//
+// @Summary Сохранить URL в текстовом формате
+// @Description Сохраняет URL и возвращает его сокращенную версию
+// @Tags URL
+// @Accept plain
+// @Produce plain
+// @Param url body string true "URL для сокращения"
+// @Success 201 {string} string "Сокращенный URL"
+// @Success 409 {string} string "Сокращенный URL"
+// @Failure 400 {string} string "Неверный формат запроса"
+// @Router / [post]
 func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 	body, err := io.ReadAll(req.Body)
 	if err != nil || len(body) == 0 {
@@ -114,6 +136,17 @@ func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 // - 201: URL успешно сокращены
 // - 400: Неверный формат запроса
 // - 500: Внутренняя ошибка сервера
+//
+// @Summary Пакетное сохранение URL
+// @Description Сохраняет массив URL и возвращает массив сокращенных URL
+// @Tags URL
+// @Accept json
+// @Produce json
+// @Param batch body []dto.BatchRequestItem true "Массив URL для сокращения"
+// @Success 201 {array} dto.BatchResponseItem
+// @Failure 400 {string} string "Неверный формат запроса"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /api/shorten/batch [post]
 func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 	var batch []dto.BatchRequestItem
 
@@ -144,6 +177,16 @@ func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 // - 307: Редирект на оригинальный URL
 // - 400: Неверный формат запроса
 // - 410: URL был удален
+//
+// @Summary Получить оригинальный URL
+// @Description Перенаправляет на оригинальный URL по сокращенному идентификатору
+// @Tags URL
+// @Produce plain
+// @Param id path string true "Идентификатор сокращенного URL"
+// @Success 307 {string} string "Редирект на оригинальный URL"
+// @Failure 400 {string} string "Неверный формат запроса"
+// @Failure 410 {string} string "URL был удален"
+// @Router /{id} [get]
 func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 	urlParts := strings.Split(req.URL.Path, "/")
 	urlParts = urlParts[1:]
@@ -174,6 +217,16 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 // - 204: У пользователя нет сохраненных URL
 // - 401: Пользователь не авторизован
 // - 500: Внутренняя ошибка сервера
+//
+// @Summary Получить все URL пользователя
+// @Description Возвращает список всех URL, созданных пользователем
+// @Tags URL
+// @Produce json
+// @Success 200 {array} dto.UserURLItem
+// @Success 204 "Нет сохраненных URL"
+// @Failure 401 {string} string "Пользователь не авторизован"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /api/user/urls [get]
 func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
 	userID, ok := middlewares.GetUserIDFromContext(req.Context())
 	if !ok || userID == "" {
@@ -202,6 +255,17 @@ func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
 // - 202: Запрос на удаление принят
 // - 400: Неверный формат запроса
 // - 500: Внутренняя ошибка сервера
+//
+// @Summary Удалить URL пользователя
+// @Description Удаляет указанные URL пользователя
+// @Tags URL
+// @Accept json
+// @Produce plain
+// @Param urls body []string true "Массив идентификаторов URL для удаления"
+// @Success 202 "Запрос на удаление принят"
+// @Failure 400 {string} string "Неверный формат запроса"
+// @Failure 500 {string} string "Внутренняя ошибка сервера"
+// @Router /api/user/urls [delete]
 func (h *URLHandler) DeleteUserURLs(res http.ResponseWriter, req *http.Request) {
 	var urlForDelete []string
 
