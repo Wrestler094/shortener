@@ -13,16 +13,20 @@ import (
 	"github.com/Wrestler094/shortener/internal/utils"
 )
 
+// URLService предоставляет методы для управления сокращёнными URL.
 type URLService struct {
 	storage     storage.IStorage
 	fileStorage *persistence.FileStorage
 	deleter     deleter.Deleter
 }
 
+// NewURLService создаёт и возвращает новый экземпляр URLService.
 func NewURLService(s storage.IStorage, fs *persistence.FileStorage, dl deleter.Deleter) *URLService {
 	return &URLService{storage: s, fileStorage: fs, deleter: dl}
 }
 
+// SaveURL сохраняет оригинальный URL и генерирует для него короткий идентификатор.
+// Если URL уже существует в хранилище, возвращает существующий короткий ID и ошибку.
 func (s *URLService) SaveURL(url string, userID string) (string, error) {
 	original := strings.TrimSpace(url)
 	if !strings.HasPrefix(original, "http://") && !strings.HasPrefix(original, "https://") {
@@ -51,6 +55,8 @@ func (s *URLService) SaveURL(url string, userID string) (string, error) {
 	return shortID, nil
 }
 
+// SaveBatch сохраняет пакет URL-ов, ассоциированных с пользователем.
+// Возвращает список сгенерированных сокращённых URL и correlation ID.
 func (s *URLService) SaveBatch(batch []dto.BatchRequestItem, userID string) ([]dto.BatchResponseItem, error) {
 	var response []dto.BatchResponseItem
 
@@ -84,10 +90,13 @@ func (s *URLService) SaveBatch(batch []dto.BatchRequestItem, userID string) ([]d
 	return response, nil
 }
 
+// GetURLByID возвращает оригинальный URL по его короткому идентификатору.
+// Также указывает, найден ли он и был ли помечен как удалённый.
 func (s *URLService) GetURLByID(id string) (string, bool, bool) {
 	return s.storage.Get(id)
 }
 
+// GetUserURLs возвращает все URL, ранее сохранённые конкретным пользователем.
 func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	rawURLs, err := s.storage.GetUserURLs(uuid)
 	if err != nil {
@@ -105,6 +114,7 @@ func (s *URLService) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 	return urls, nil
 }
 
+// DeleteUserURLs помещает переданные URL пользователя в очередь на удаление.
 func (s *URLService) DeleteUserURLs(userID string, urls []string) error {
 	if len(urls) == 0 {
 		return nil
