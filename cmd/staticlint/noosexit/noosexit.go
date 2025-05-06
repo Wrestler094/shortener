@@ -15,6 +15,7 @@ const (
 	exitFuncName = "Exit"
 )
 
+// Analyzer - это анализатор, который проверяет использование os.Exit в функции main.
 var Analyzer = &analysis.Analyzer{
 	Name: "noosexit",
 	Doc:  "запрещает вызов os.Exit в функции main пакета main",
