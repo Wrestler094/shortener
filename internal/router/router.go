@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	httpSwagger "github.com/swaggo/http-swagger"
 
 	"github.com/Wrestler094/shortener/internal/handlers"
 	"github.com/Wrestler094/shortener/internal/middlewares"
@@ -35,6 +36,10 @@ func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 
 	r.Get("/api/user/urls", handlers.URLHandler.GetUserURLs)
 	r.Delete("/api/user/urls", handlers.URLHandler.DeleteUserURLs)
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+	))
 
 	return r
 }
