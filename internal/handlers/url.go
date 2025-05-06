@@ -58,8 +58,8 @@ func NewURLHandler(service *services.URLService) *URLHandler {
 func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	var shortenRequest ShortenRequest
 
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
+	body, readErr := io.ReadAll(req.Body)
+	if readErr != nil {
 		http.Error(res, "Invalid request", http.StatusBadRequest)
 		return
 	}
@@ -70,16 +70,16 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	}
 
 	userID, _ := middlewares.GetUserIDFromContext(req.Context())
-	shortID, err := h.service.SaveURL(shortenRequest.URL, userID)
-	if err != nil {
-		if errors.Is(err, postgres.ErrURLAlreadyExists) {
+	shortID, saveErr := h.service.SaveURL(shortenRequest.URL, userID)
+	if saveErr != nil {
+		if errors.Is(saveErr, postgres.ErrURLAlreadyExists) {
 			utils.WriteJSON(res, http.StatusConflict, ShortenResponse{
 				Result: configs.FlagBaseAddr + "/" + shortID,
 			})
 			return
 		}
 
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		http.Error(res, saveErr.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -106,22 +106,22 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 // @Failure 400 {string} string "Неверный формат запроса"
 // @Router / [post]
 func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
-	body, err := io.ReadAll(req.Body)
-	if err != nil || len(body) == 0 {
+	body, readErr := io.ReadAll(req.Body)
+	if readErr != nil || len(body) == 0 {
 		http.Error(res, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	userID, _ := middlewares.GetUserIDFromContext(req.Context())
-	shortID, err := h.service.SaveURL(string(body), userID)
-	if err != nil {
-		if errors.Is(err, postgres.ErrURLAlreadyExists) {
+	shortID, saveErr := h.service.SaveURL(string(body), userID)
+	if saveErr != nil {
+		if errors.Is(saveErr, postgres.ErrURLAlreadyExists) {
 			res.Header().Set("Content-Type", "text/plain")
 			res.WriteHeader(http.StatusConflict)
 			res.Write([]byte(configs.FlagBaseAddr + "/" + shortID))
 			return
 		}
-		http.Error(res, err.Error(), http.StatusBadRequest)
+		http.Error(res, saveErr.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -150,8 +150,8 @@ func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 	var batch []dto.BatchRequestItem
 
-	body, err := io.ReadAll(req.Body)
-	if err != nil {
+	body, readErr := io.ReadAll(req.Body)
+	if readErr != nil {
 		http.Error(res, "Failed to read request", http.StatusBadRequest)
 		return
 	}
@@ -163,8 +163,8 @@ func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 	}
 
 	userID, _ := middlewares.GetUserIDFromContext(req.Context())
-	result, err := h.service.SaveBatch(batch, userID)
-	if err != nil {
+	result, saveErr := h.service.SaveBatch(batch, userID)
+	if saveErr != nil {
 		http.Error(res, "Failed to process batch", http.StatusInternalServerError)
 		return
 	}
