@@ -19,11 +19,34 @@
 package main
 
 import (
+	"fmt"
+
 	_ "github.com/Wrestler094/shortener/docs" // путь к сгенерированной документации
 
 	"github.com/Wrestler094/shortener/internal/app"
 )
 
+var (
+	buildVersion string
+	buildDate    string
+	buildCommit  string
+)
+
 func main() {
+	printBuildInfo()
+
 	app.Run()
+}
+
+func printBuildInfo() {
+	fmt.Println("Build version:", getOrNA(buildVersion))
+	fmt.Println("Build date:   ", getOrNA(buildDate))
+	fmt.Println("Build commit: ", getOrNA(buildCommit))
+}
+
+func getOrNA(s string) string {
+	if s == "" {
+		return "N/A"
+	}
+	return s
 }
