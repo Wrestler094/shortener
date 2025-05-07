@@ -7,13 +7,19 @@ ENTRY = ./cmd/shortener/main.go
 # Импорт-префикс вашего проекта для -local
 LOCAL_MODULE = github.com/Wrestler094/shortener
 
+# Параметры сборки
+VERSION ?= $(shell git describe --tags --always --dirty)
+DATE    ?= $(shell date +%Y-%m-%dT%H:%M:%S)
+COMMIT  ?= $(shell git rev-parse --short HEAD)
+LDFLAGS = -X 'main.buildVersion=$(VERSION)' -X 'main.buildDate=$(DATE)' -X 'main.buildCommit=$(COMMIT)'
+
 .PHONY: all fmt imports build run
 
 all: fmt imports build
 
 # Сборка бинарного файла
 build:
-	@go build -o $(BINARY_NAME) $(ENTRY)
+	@go build -ldflags "$(LDFLAGS)" -o $(BINARY_NAME) $(ENTRY)
 
 rebuild: clean build
 
@@ -40,3 +46,8 @@ test:
 # Очистка go модулей и зависимостей
 tidy:
 	@go mod tidy
+
+version:
+	@echo "Version: $(VERSION)"
+	@echo "Date:    $(DATE)"
+	@echo "Commit:  $(COMMIT)"
