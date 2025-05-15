@@ -15,6 +15,8 @@ var (
 	FlagFileStoragePath string
 	// FlagDatabaseDSN - строка подключения к базе данных
 	FlagDatabaseDSN string
+	// FlagEnableHttps - флаг для включения HTTPS
+	FlagEnableHttps string
 )
 
 // Константы приложения
@@ -23,6 +25,8 @@ var (
 	ShortURLLen = 8
 	// LoggerLevel - уровень логирования
 	LoggerLevel = "info"
+	// HTTPS порт
+	HttpsPort = "443"
 )
 
 // ParseFlags парсит флаги командной строки и устанавливает значения конфигурации.
@@ -31,11 +35,13 @@ var (
 // -b: базовый адрес и порт для результирующих URL (по умолчанию "http://localhost:8080")
 // -f: путь к файлу для сохранения настроек
 // -d: строка подключения к базе данных
+// -s: флаг для включения HTTPS
 func ParseFlags() {
 	flag.StringVar(&FlagRunAddr, "a", ":8080", "address and port to run server")
 	flag.StringVar(&FlagBaseAddr, "b", "http://localhost:8080", "basic address and port of result url")
 	flag.StringVar(&FlagFileStoragePath, "f", "", "path to the file where current settings are saved")
 	flag.StringVar(&FlagDatabaseDSN, "d", "", "database connection")
+	flag.StringVar(&FlagEnableHttps, "s", "", "enable HTTPS protocol")
 
 	/* DEV */
 	//flag.StringVar(&FlagFileStoragePath, "f", "internal/storage/urls.json", "path to the file where current settings are saved")
@@ -61,6 +67,9 @@ func ParseEnv() {
 		FlagFileStoragePath = envRunAddr
 	}
 	if envRunAddr := os.Getenv("DATABASE_DSN"); envRunAddr != "" {
+		FlagDatabaseDSN = envRunAddr
+	}
+	if envRunAddr := os.Getenv("ENABLE_HTTPS"); envRunAddr != "" {
 		FlagDatabaseDSN = envRunAddr
 	}
 }
