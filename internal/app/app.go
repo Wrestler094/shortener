@@ -2,6 +2,7 @@ package app
 
 import (
 	"crypto/tls"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -29,22 +30,23 @@ func Run() {
 
 	app := InitApp()
 
-	if configs.FlagEnableHttps != "" {
+	if configs.FlagEnableHTTPS != "" {
 		// Создаём self-signed TLS сертификат
 		cert, err := utils.GenerateSelfSignedCert()
 		if err != nil {
 			logger.Log.Fatal("Failed to generate cert", zap.Error(err))
 		}
 
+		port := fmt.Sprintf(":%d", configs.HTTPSPort)
 		server := &http.Server{
-			Addr:    configs.HttpsPort,
+			Addr:    port,
 			Handler: app.Router,
 			TLSConfig: &tls.Config{
 				Certificates: []tls.Certificate{cert},
 			},
 		}
 
-		logger.Log.Info("Running server (HTTPS mode enabled (self-signed cert))", zap.String("address", configs.HttpsPort))
+		logger.Log.Info("Running server (HTTPS mode enabled (self-signed cert))", zap.String("address", port))
 		logger.Log.Fatal("Server crashed", zap.Error(server.ListenAndServeTLS("", "")))
 	} else {
 		logger.Log.Info("Running server (HTTP mode enabled)", zap.String("address", configs.FlagRunAddr))
