@@ -11,6 +11,10 @@ import (
 	"time"
 )
 
+// GenerateSelfSignedCert создает самоподписанный TLS-сертификат для локальной разработки.
+// Сертификат действителен в течение 1 года и может использоваться для HTTPS-соединений.
+// Возвращает tls.Certificate, содержащий сгенерированный сертификат и приватный ключ,
+// или ошибку, если генерация не удалась.
 func GenerateSelfSignedCert() (tls.Certificate, error) {
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
