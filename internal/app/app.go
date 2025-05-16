@@ -21,6 +21,7 @@ import (
 // 4. Инициализирует приложение
 // 5. Запускает HTTP-сервер на указанном адресе
 func Run() {
+	configs.ParseJSON()
 	configs.ParseFlags()
 	configs.ParseEnv()
 
@@ -30,7 +31,7 @@ func Run() {
 
 	app := InitApp()
 
-	if configs.FlagEnableHTTPS != "" {
+	if configs.FlagEnableHTTPS == "true" {
 		// Создаём self-signed TLS сертификат
 		cert, err := utils.GenerateSelfSignedCert()
 		if err != nil {
