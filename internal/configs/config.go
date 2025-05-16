@@ -1,64 +1,65 @@
+// Package configs предоставляет функциональность для управления конфигурацией приложения.
+// Поддерживает загрузку конфигурации из различных источников:
+// - Флаги командной строки
+// - JSON-файл конфигурации
+// - Переменные окружения
 package configs
 
 import (
 	"encoding/json"
 	"flag"
 	"os"
-	"strconv"
 )
 
 // Глобальные переменные для хранения флагов конфигурации
 var (
-	// FlagRunAddr - адрес и порт для запуска сервера
+	// FlagRunAddr - адрес и порт для запуска сервера (например, ":8080")
 	FlagRunAddr string
-	// FlagBaseAddr - базовый адрес и порт для результирующих URL
+	// FlagBaseAddr - базовый адрес и порт для результирующих URL (например, "http://localhost:8080")
 	FlagBaseAddr string
-	// FlagFileStoragePath - путь к файлу для сохранения настроек
+	// FlagFileStoragePath - путь к файлу для сохранения настроек (например, "/path/to/storage.json")
 	FlagFileStoragePath string
-	// FlagDatabaseDSN - строка подключения к базе данных
+	// FlagDatabaseDSN - строка подключения к базе данных (например, "postgres://user:pass@localhost:5432/dbname")
 	FlagDatabaseDSN string
-	// FlagEnableHTTPS - флаг для включения HTTPS
-	FlagEnableHTTPS string
+	// FlagEnableHTTPS - флаг для включения HTTPS протокола
+	FlagEnableHTTPS bool
+	// flagConfigPath - путь к файлу конфигурации
+	flagConfigPath string
 )
 
 // Константы приложения
 var (
-	// ShortURLLen - длина сокращенного URL
+	// ShortURLLen - длина сокращенного URL в символах
 	ShortURLLen = 8
-	// LoggerLevel - уровень логирования
+	// LoggerLevel - уровень логирования (info, debug, warn, error)
 	LoggerLevel = "info"
-	// HTTPS порт
-	HTTPSPort = 443
+	// HTTPSPort - стандартный порт для HTTPS соединений
+	HTTPSPort = 8443
 )
 
+// Config представляет структуру конфигурации приложения
 type Config struct {
-	RunAddr         string `json:"server_address"`
-	BaseAddr        string `json:"base_url"`
+	// RunAddr - адрес и порт для запуска сервера
+	RunAddr string `json:"server_address"`
+	// BaseAddr - базовый адрес и порт для результирующих URL
+	BaseAddr string `json:"base_url"`
+	// FileStoragePath - путь к файлу для сохранения настроек
 	FileStoragePath string `json:"file_storage_path"`
-	DatabaseDSN     string `json:"database_dsn"`
-	EnableHTTPS     bool   `json:"enable_https"`
+	// DatabaseDSN - строка подключения к базе данных
+	DatabaseDSN string `json:"database_dsn"`
+	// EnableHTTPS - флаг для включения HTTPS
+	EnableHTTPS bool `json:"enable_https"`
 }
 
-func ParseJSON() {
-	var configPath string
-	flag.StringVar(&configPath, "config", "", "path to config file")
-	flag.StringVar(&configPath, "c", "", "path to config file (shorthand)")
-	flag.Parse() // парсим предварительно, чтобы получить config-файл
-
-	if configPath == "" {
-		configPath = os.Getenv("CONFIG")
-	}
-
-	if configPath != "" {
-		fileCfg, err := LoadConfigFromFile(configPath)
-		if err == nil {
-			FlagRunAddr = fileCfg.RunAddr
-			FlagBaseAddr = fileCfg.BaseAddr
-			FlagFileStoragePath = fileCfg.FileStoragePath
-			FlagDatabaseDSN = fileCfg.DatabaseDSN
-			FlagEnableHTTPS = strconv.FormatBool(fileCfg.EnableHTTPS)
-		}
-	}
+// InitConfig инициализирует конфигурацию приложения.
+// Последовательность загрузки конфигурации:
+// 1. Флаги командной строки
+// 2. JSON-файл конфигурации
+// 3. Переменные окружения
+func InitConfig() {
+	ParseFlags()
+	ParseJSON()
+	ParseEnv()
 }
 
 // ParseFlags парсит флаги командной строки и устанавливает значения конфигурации.
@@ -73,7 +74,9 @@ func ParseFlags() {
 	flag.StringVar(&FlagBaseAddr, "b", "http://localhost:8080", "basic address and port of result url")
 	flag.StringVar(&FlagFileStoragePath, "f", "", "path to the file where current settings are saved")
 	flag.StringVar(&FlagDatabaseDSN, "d", "", "database connection")
-	flag.StringVar(&FlagEnableHTTPS, "s", "", "enable HTTPS protocol")
+	flag.BoolVar(&FlagEnableHTTPS, "s", false, "enable HTTPS protocol")
+	flag.StringVar(&flagConfigPath, "config", "", "path to config file")
+	flag.StringVar(&flagConfigPath, "c", "", "path to config file (shorthand)")
 
 	/* DEV */
 	//flag.StringVar(&FlagFileStoragePath, "f", "internal/storage/urls.json", "path to the file where current settings are saved")
@@ -82,12 +85,47 @@ func ParseFlags() {
 	flag.Parse()
 }
 
-// ParseEnv парсит переменные окружения и устанавливает значения конфигурации.
+// ParseJSON загружает конфигурацию из JSON-файла.
+// Приоритет значений:
+// 1. Значения из флагов командной строки (если установлены)
+// 2. Значения из JSON-файла (если флаг не установлен)
+// Путь к файлу конфигурации может быть указан через:
+// - Флаг командной строки -c или --config
+// - Переменную окружения CONFIG
+func ParseJSON() {
+	if flagConfigPath == "" {
+		flagConfigPath = os.Getenv("CONFIG")
+	}
+
+	if flagConfigPath != "" {
+		fileCfg, err := LoadConfigFromFile(flagConfigPath)
+		if err == nil {
+			if flagIsSet("a") {
+				FlagRunAddr = fileCfg.RunAddr
+			}
+			if flagIsSet("b") {
+				FlagBaseAddr = fileCfg.BaseAddr
+			}
+			if FlagFileStoragePath == "" {
+				FlagFileStoragePath = fileCfg.FileStoragePath
+			}
+			if FlagDatabaseDSN == "" {
+				FlagDatabaseDSN = fileCfg.DatabaseDSN
+			}
+			if flagIsSet("s") {
+				FlagEnableHTTPS = fileCfg.EnableHTTPS
+			}
+		}
+	}
+}
+
+// ParseEnv загружает конфигурацию из переменных окружения.
 // Поддерживаемые переменные окружения:
-// SERVER_ADDRESS: адрес и порт для запуска сервера
-// BASE_URL: базовый адрес и порт для результирующих URL
-// FILE_STORAGE_PATH: путь к файлу для сохранения настроек
-// DATABASE_DSN: строка подключения к базе данных
+// SERVER_ADDRESS - адрес и порт для запуска сервера
+// BASE_URL - базовый адрес и порт для результирующих URL
+// FILE_STORAGE_PATH - путь к файлу для сохранения настроек
+// DATABASE_DSN - строка подключения к базе данных
+// ENABLE_HTTPS - флаг для включения HTTPS (значения: "true" или "false")
 func ParseEnv() {
 	if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
 		FlagRunAddr = envRunAddr
@@ -102,10 +140,30 @@ func ParseEnv() {
 		FlagDatabaseDSN = envRunAddr
 	}
 	if envRunAddr := os.Getenv("ENABLE_HTTPS"); envRunAddr != "" {
-		FlagEnableHTTPS = envRunAddr
+		if envRunAddr == "true" {
+			FlagEnableHTTPS = true
+		} else {
+			FlagEnableHTTPS = false
+		}
 	}
 }
 
+// flagIsSet проверяет, был ли установлен флаг командной строки
+// name - имя флага для проверки
+// Возвращает true, если флаг был установлен
+func flagIsSet(name string) bool {
+	found := false
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == name {
+			found = true
+		}
+	})
+	return found
+}
+
+// LoadConfigFromFile загружает конфигурацию из JSON-файла
+// path - путь к файлу конфигурации
+// Возвращает структуру Config и ошибку, если она возникла
 func LoadConfigFromFile(path string) (Config, error) {
 	var cfg Config
 	data, err := os.ReadFile(path)
