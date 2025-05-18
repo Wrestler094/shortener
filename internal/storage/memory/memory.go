@@ -1,6 +1,7 @@
 package memory
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -20,10 +21,11 @@ func NewMemoryStorage(recoveredUrls map[string]string) *MemoryStorage {
 }
 
 // Save сохраняет пару сокращенный URL - оригинальный URL в хранилище
+// ctx - контекст запроса
 // shortURL - сокращенный URL
 // originalURL - оригинальный URL
 // userID - идентификатор пользователя (не используется в памяти)
-func (ms *MemoryStorage) Save(shortURL string, originalURL string, _ string) error {
+func (ms *MemoryStorage) Save(_ context.Context, shortURL string, originalURL string, _ string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -32,9 +34,10 @@ func (ms *MemoryStorage) Save(shortURL string, originalURL string, _ string) err
 }
 
 // SaveBatch сохраняет пакет URL в хранилище
+// ctx - контекст запроса
 // batch - карта сокращенных URL к оригинальным URL
 // userID - идентификатор пользователя (не используется в памяти)
-func (ms *MemoryStorage) SaveBatch(batch map[string]string, _ string) error {
+func (ms *MemoryStorage) SaveBatch(_ context.Context, batch map[string]string, _ string) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 
@@ -46,12 +49,13 @@ func (ms *MemoryStorage) SaveBatch(batch map[string]string, _ string) error {
 }
 
 // Get возвращает оригинальный URL по сокращенному
+// ctx - контекст запроса
 // shortURL - сокращенный URL
 // Возвращает:
 // - оригинальный URL
 // - флаг удаления (всегда false для памяти)
 // - флаг наличия URL в хранилище
-func (ms *MemoryStorage) Get(shortURL string) (string, bool, bool) {
+func (ms *MemoryStorage) Get(_ context.Context, shortURL string) (string, bool, bool) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
@@ -60,9 +64,10 @@ func (ms *MemoryStorage) Get(shortURL string) (string, bool, bool) {
 }
 
 // GetUserURLs возвращает список URL пользователя
+// ctx - контекст запроса
 // uuid - идентификатор пользователя
 // В памяти всегда возвращает пустой список
-func (ms *MemoryStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
+func (ms *MemoryStorage) GetUserURLs(_ context.Context, uuid string) ([]dto.UserURLItem, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
@@ -70,15 +75,17 @@ func (ms *MemoryStorage) GetUserURLs(uuid string) ([]dto.UserURLItem, error) {
 }
 
 // DeleteUserURLs помечает URL пользователя как удаленные
+// ctx - контекст запроса
 // В памяти не реализовано
-func (ms *MemoryStorage) DeleteUserURLs(_ string, _ []string) error {
+func (ms *MemoryStorage) DeleteUserURLs(_ context.Context, _ string, _ []string) error {
 	return nil
 }
 
 // FindShortByOriginalURL ищет сокращенный URL по оригинальному
+// ctx - контекст запроса
 // originalURL - оригинальный URL
 // Возвращает сокращенный URL или ошибку, если URL не найден
-func (ms *MemoryStorage) FindShortByOriginalURL(originalURL string) (string, error) {
+func (ms *MemoryStorage) FindShortByOriginalURL(_ context.Context, originalURL string) (string, error) {
 	ms.mu.RLock()
 	defer ms.mu.RUnlock()
 
