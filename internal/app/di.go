@@ -21,7 +21,9 @@ import (
 
 // App представляет основную структуру приложения
 type App struct {
-	Router http.Handler // HTTP-роутер приложения
+	Router  http.Handler     // HTTP-роутер приложения
+	Storage storage.IStorage // Хранилище для работы с URL
+	Deleter deleter.Deleter  // Компонент для асинхронного удаления URL
 }
 
 // InitApp инициализирует приложение, создавая все необходимые зависимости:
@@ -61,5 +63,5 @@ func InitApp() *App {
 	hs := handlers.NewHandlers(urlHandler, pingHandler)
 	r := router.InitRouter(hs)
 
-	return &App{Router: r}
+	return &App{Router: r, Storage: store, Deleter: urlDeleter}
 }

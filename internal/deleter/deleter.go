@@ -1,11 +1,7 @@
-// Package deleter предоставляет реализацию асинхронного удаления сокращённых URL.
-// Основная задача — накопление URL для удаления в буфере и их последующая пакетная очистка
-// через заданный интервал времени в фоновом процессе.
-//
-// Это позволяет разгрузить основную логику обработки запросов и минимизировать количество операций с базой данных.
 package deleter
 
 import (
+	"context"
 	"sync"
 	"time"
 
@@ -17,34 +13,36 @@ import (
 
 // Deleter определяет интерфейс для асинхронного удаления URL
 type Deleter interface {
-	// QueueForDeletion добавляет URL в очередь на удаление
 	QueueForDeletion(shortID, userID string)
-	// StartBackgroundFlusher запускает фоновый процесс периодического удаления URL
 	StartBackgroundFlusher()
+	Stop()
 }
 
 // URLDeleter реализует асинхронное удаление URL
 type URLDeleter struct {
-	mu       sync.Mutex          // Мьютекс для синхронизации доступа к буферу
-	buffer   map[string][]string // Буфер URL для удаления: map[userID][]shortID
-	storage  storage.IStorage    // Хранилище для удаления URL
-	interval time.Duration       // Интервал между попытками удаления
+	mu       sync.Mutex
+	buffer   map[string][]string
+	storage  storage.IStorage
+	interval time.Duration
+
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
 }
 
-// NewURLDeleter создает новый экземпляр URLDeleter
-// storage - хранилище для удаления URL
-// interval - интервал между попытками удаления
+// NewURLDeleter создаёт новый экземпляр URLDeleter
 func NewURLDeleter(storage storage.IStorage, interval time.Duration) *URLDeleter {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &URLDeleter{
 		buffer:   make(map[string][]string),
 		storage:  storage,
 		interval: interval,
+		ctx:      ctx,
+		cancel:   cancel,
 	}
 }
 
 // QueueForDeletion добавляет URL в очередь на удаление
-// shortID - сокращенный URL для удаления
-// userID - идентификатор пользователя
 func (d *URLDeleter) QueueForDeletion(shortID, userID string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -52,32 +50,53 @@ func (d *URLDeleter) QueueForDeletion(shortID, userID string) {
 	d.buffer[userID] = append(d.buffer[userID], shortID)
 }
 
-// StartBackgroundFlusher запускает фоновый процесс периодического удаления URL
-// Процесс запускается в отдельной горутине и периодически пытается удалить URL из буфера
+// StartBackgroundFlusher запускает фоновый процесс удаления
 func (d *URLDeleter) StartBackgroundFlusher() {
+	d.wg.Add(1)
 	ticker := time.NewTicker(d.interval)
 
 	go func() {
-		for range ticker.C {
-			d.flush()
+		defer d.wg.Done()
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ticker.C:
+				d.flush()
+			case <-d.ctx.Done():
+				logger.Log.Info("Deleter received shutdown signal, flushing...")
+				d.flush() // при остановке flush в последний раз
+				return
+			}
 		}
 	}()
 }
 
-// flush пытается удалить все URL из буфера
-// При ошибке удаления URL остаются в буфере для следующей попытки
+// Stop завершает фоновые процессы и ждёт завершения
+func (d *URLDeleter) Stop() {
+	d.cancel()
+	d.wg.Wait()
+}
+
+// flush удаляет URL из буфера
 func (d *URLDeleter) flush() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+
+	// Создаем контекст с таймаутом в 5 секунд для операции удаления
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	for userID, shortIDs := range d.buffer {
 		if len(shortIDs) == 0 {
 			continue
 		}
-
-		err := d.storage.DeleteUserURLs(userID, shortIDs)
+		err := d.storage.DeleteUserURLs(ctx, userID, shortIDs)
 		if err != nil {
-			logger.Log.Error("Batch delete failed", zap.String("user_id", userID), zap.Error(err))
+			logger.Log.Error("Batch delete failed",
+				zap.String("user_id", userID),
+				zap.Error(err),
+				zap.Error(ctx.Err()))
 			continue
 		}
 		delete(d.buffer, userID)

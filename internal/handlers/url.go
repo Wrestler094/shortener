@@ -70,7 +70,7 @@ func (h *URLHandler) SaveJSONURL(res http.ResponseWriter, req *http.Request) {
 	}
 
 	userID, _ := middlewares.GetUserIDFromContext(req.Context())
-	shortID, saveErr := h.service.SaveURL(shortenRequest.URL, userID)
+	shortID, saveErr := h.service.SaveURL(req.Context(), shortenRequest.URL, userID)
 	if saveErr != nil {
 		if errors.Is(saveErr, postgres.ErrURLAlreadyExists) {
 			utils.WriteJSON(res, http.StatusConflict, ShortenResponse{
@@ -113,7 +113,7 @@ func (h *URLHandler) SavePlainURL(res http.ResponseWriter, req *http.Request) {
 	}
 
 	userID, _ := middlewares.GetUserIDFromContext(req.Context())
-	shortID, saveErr := h.service.SaveURL(string(body), userID)
+	shortID, saveErr := h.service.SaveURL(req.Context(), string(body), userID)
 	if saveErr != nil {
 		if errors.Is(saveErr, postgres.ErrURLAlreadyExists) {
 			res.Header().Set("Content-Type", "text/plain")
@@ -163,7 +163,7 @@ func (h *URLHandler) SaveBatchURLs(res http.ResponseWriter, req *http.Request) {
 	}
 
 	userID, _ := middlewares.GetUserIDFromContext(req.Context())
-	result, saveErr := h.service.SaveBatch(batch, userID)
+	result, saveErr := h.service.SaveBatch(req.Context(), batch, userID)
 	if saveErr != nil {
 		http.Error(res, "Failed to process batch", http.StatusInternalServerError)
 		return
@@ -196,7 +196,7 @@ func (h *URLHandler) GetURL(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	url, isDeleted, ok := h.service.GetURLByID(urlParts[0])
+	url, isDeleted, ok := h.service.GetURLByID(req.Context(), urlParts[0])
 	if !ok {
 		http.Error(res, "shorten URL not found", http.StatusBadRequest)
 		return
@@ -234,7 +234,7 @@ func (h *URLHandler) GetUserURLs(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	userURLs, err := h.service.GetUserURLs(userID)
+	userURLs, err := h.service.GetUserURLs(req.Context(), userID)
 	if err != nil {
 		logger.Log.Error("Failed to get user URLs", zap.Error(err))
 		http.Error(res, "internal server error", http.StatusInternalServerError)
@@ -277,7 +277,7 @@ func (h *URLHandler) DeleteUserURLs(res http.ResponseWriter, req *http.Request) 
 	}
 
 	userID, _ := middlewares.GetUserIDFromContext(req.Context())
-	err := h.service.DeleteUserURLs(userID, urlForDelete)
+	err := h.service.DeleteUserURLs(req.Context(), userID, urlForDelete)
 	if err != nil {
 		logger.Log.Error("Failed to delete user URLs", zap.Error(err))
 		http.Error(res, "internal server error", http.StatusInternalServerError)

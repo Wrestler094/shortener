@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -45,7 +46,7 @@ func TestURLService_SaveURL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			shortID, err := service.SaveURL(tt.url, tt.userID)
+			shortID, err := service.SaveURL(context.Background(), tt.url, tt.userID)
 			if tt.wantErr {
 				assert.Error(t, err)
 				assert.Empty(t, shortID)
@@ -66,7 +67,7 @@ func TestURLService_SaveBatch(t *testing.T) {
 		{CorrelationID: "3", OriginalURL: "https://example3.com"},
 	}
 
-	result, err := service.SaveBatch(batch, "user1")
+	result, err := service.SaveBatch(context.Background(), batch, "user1")
 	require.NoError(t, err)
 	require.Len(t, result, 3)
 
@@ -80,17 +81,17 @@ func TestURLService_GetURLByID(t *testing.T) {
 	service := newTestService()
 
 	// Сначала сохраняем URL
-	shortID, err := service.SaveURL("https://example.com", "user1")
+	shortID, err := service.SaveURL(context.Background(), "https://example.com", "user1")
 	require.NoError(t, err)
 
 	// Получаем URL
-	url, isDeleted, ok := service.GetURLByID(shortID)
+	url, isDeleted, ok := service.GetURLByID(context.Background(), shortID)
 	assert.True(t, ok)
 	assert.False(t, isDeleted)
 	assert.Equal(t, "https://example.com", url)
 
 	// Проверяем несуществующий URL
-	url, isDeleted, ok = service.GetURLByID("nonexistent")
+	url, isDeleted, ok = service.GetURLByID(context.Background(), "nonexistent")
 	assert.False(t, ok)
 	assert.False(t, isDeleted)
 	assert.Empty(t, url)
