@@ -16,7 +16,7 @@ import (
 
 // URLService предоставляет методы для управления сокращёнными URL.
 type URLService struct {
-	storage     storage.IStorage         // Основное хранилище URL
+	storage     storage.IURLStorage      // Основное хранилище URL
 	fileStorage *persistence.FileStorage // Файловое хранилище для бэкапа
 	deleter     deleter.Deleter          // Сервис для асинхронного удаления URL
 }
@@ -25,7 +25,7 @@ type URLService struct {
 // s - основное хранилище URL
 // fs - файловое хранилище для бэкапа
 // dl - сервис для асинхронного удаления URL
-func NewURLService(s storage.IStorage, fs *persistence.FileStorage, dl deleter.Deleter) *URLService {
+func NewURLService(s storage.IURLStorage, fs *persistence.FileStorage, dl deleter.Deleter) *URLService {
 	return &URLService{storage: s, fileStorage: fs, deleter: dl}
 }
 

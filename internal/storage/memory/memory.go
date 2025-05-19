@@ -97,3 +97,13 @@ func (ms *MemoryStorage) FindShortByOriginalURL(_ context.Context, originalURL s
 
 	return "", fmt.Errorf("could not find original url")
 }
+
+// GetStats возвращает статистику хранилища (Моковая имплементация)
+// ctx - контекст запроса
+// Возвращает:
+// - количество URL в хранилище
+// - количество пользователей (в памяти всегда 0)
+// - ошибку, если возникла
+func (ms *MemoryStorage) GetStats(ctx context.Context) (int, int, error) {
+	return 0, 0, nil
+}

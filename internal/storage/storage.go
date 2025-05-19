@@ -13,8 +13,16 @@ var (
 	_ IStorage = (*memory.MemoryStorage)(nil)
 )
 
-// IStorage определяет интерфейс для хранения URL
+// IStorage объединяет интерфейсы для работы с URL и статистикой хранилища
 type IStorage interface {
+	// IURLStorage определяет методы для работы с URL в хранилище
+	IURLStorage
+	// Встраивает интерфейс для получения статистики хранилища
+	IStatsStorage
+}
+
+// IURLStorage определяет методы для работы с URL в хранилище
+type IURLStorage interface {
 	// Save сохраняет пару сокращенный URL - оригинальный URL
 	// ctx - контекст запроса
 	// shortURL - сокращенный URL
@@ -52,6 +60,17 @@ type IStorage interface {
 	// ctx - контекст запроса
 	// originalURL - оригинальный URL
 	FindShortByOriginalURL(context.Context, string) (string, error)
+}
+
+// IStatsStorage определяет методы для получения статистики хранилища
+type IStatsStorage interface {
+	// GetStats возвращает статистику хранилища
+	// ctx - контекст запроса
+	// Возвращает:
+	// - количество URL в хранилище
+	// - количество пользователей
+	// - ошибку, если возникла
+	GetStats(context.Context) (int, int, error)
 }
 
 // IPingableStorage определяет интерфейс для проверки доступности хранилища
