@@ -54,13 +54,15 @@ func InitApp() *App {
 
 	// Инициализация сервисов
 	urlService := services.NewURLService(store, fileStorage, urlDeleter)
+	statsService := services.NewStatsService(store)
 
 	// Инициализация хендлеров
 	urlHandler := handlers.NewURLHandler(urlService)
 	pingHandler := handlers.NewPingHandler(store)
+	statsHandler := handlers.NewStatsHandler(statsService)
 
 	// Создание роутера
-	hs := handlers.NewHandlers(urlHandler, pingHandler)
+	hs := handlers.NewHandlers(urlHandler, pingHandler, statsHandler)
 	r := router.InitRouter(hs)
 
 	return &App{Router: r, Storage: store, Deleter: urlDeleter}

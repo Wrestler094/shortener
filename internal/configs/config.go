@@ -23,6 +23,8 @@ var (
 	FlagDatabaseDSN string
 	// FlagEnableHTTPS - флаг для включения HTTPS протокола
 	FlagEnableHTTPS bool
+	// FlagTrustedSubnet - доверенная подсеть в формате CIDR (например, "192.168.1.0/24")
+	FlagTrustedSubnet string
 	// flagConfigPath - путь к файлу конфигурации
 	flagConfigPath string
 )
@@ -49,6 +51,8 @@ type Config struct {
 	DatabaseDSN string `json:"database_dsn"`
 	// EnableHTTPS - флаг для включения HTTPS
 	EnableHTTPS bool `json:"enable_https"`
+	// TrustedSubnet - доверенная подсеть в формате CIDR (например, "192.168.1.0/24")
+	TrustedSubnet string `json:"trusted_subnet"`
 }
 
 // InitConfig инициализирует конфигурацию приложения.
@@ -75,12 +79,9 @@ func ParseFlags() {
 	flag.StringVar(&FlagFileStoragePath, "f", "", "path to the file where current settings are saved")
 	flag.StringVar(&FlagDatabaseDSN, "d", "", "database connection")
 	flag.BoolVar(&FlagEnableHTTPS, "s", false, "enable HTTPS protocol")
+	flag.StringVar(&FlagTrustedSubnet, "t", "", "trusted subnet in CIDR format")
 	flag.StringVar(&flagConfigPath, "config", "", "path to config file")
 	flag.StringVar(&flagConfigPath, "c", "", "path to config file (shorthand)")
-
-	/* DEV */
-	//flag.StringVar(&FlagFileStoragePath, "f", "internal/storage/urls.json", "path to the file where current settings are saved")
-	//flag.StringVar(&FlagDatabaseDSN, "d", "postgres://admin:secret@localhost:5432/mydatabase?sslmode=disable", "database connection")
 
 	flag.Parse()
 }
@@ -115,6 +116,9 @@ func ParseJSON() {
 			if flagIsSet("s") {
 				FlagEnableHTTPS = fileCfg.EnableHTTPS
 			}
+			if FlagTrustedSubnet == "" {
+				FlagTrustedSubnet = fileCfg.TrustedSubnet
+			}
 		}
 	}
 }
@@ -127,24 +131,27 @@ func ParseJSON() {
 // DATABASE_DSN - строка подключения к базе данных
 // ENABLE_HTTPS - флаг для включения HTTPS (значения: "true" или "false")
 func ParseEnv() {
-	if envRunAddr := os.Getenv("SERVER_ADDRESS"); envRunAddr != "" {
-		FlagRunAddr = envRunAddr
+	if envVar := os.Getenv("SERVER_ADDRESS"); envVar != "" {
+		FlagRunAddr = envVar
 	}
-	if envRunAddr := os.Getenv("BASE_URL"); envRunAddr != "" {
-		FlagBaseAddr = envRunAddr
+	if envVar := os.Getenv("BASE_URL"); envVar != "" {
+		FlagBaseAddr = envVar
 	}
-	if envRunAddr := os.Getenv("FILE_STORAGE_PATH"); envRunAddr != "" {
-		FlagFileStoragePath = envRunAddr
+	if envVar := os.Getenv("FILE_STORAGE_PATH"); envVar != "" {
+		FlagFileStoragePath = envVar
 	}
-	if envRunAddr := os.Getenv("DATABASE_DSN"); envRunAddr != "" {
-		FlagDatabaseDSN = envRunAddr
+	if envVar := os.Getenv("DATABASE_DSN"); envVar != "" {
+		FlagDatabaseDSN = envVar
 	}
-	if envRunAddr := os.Getenv("ENABLE_HTTPS"); envRunAddr != "" {
-		if envRunAddr == "true" {
+	if envVar := os.Getenv("ENABLE_HTTPS"); envVar != "" {
+		if envVar == "true" {
 			FlagEnableHTTPS = true
 		} else {
 			FlagEnableHTTPS = false
 		}
+	}
+	if envVar := os.Getenv("TRUSTED_SUBNET"); envVar != "" {
+		FlagTrustedSubnet = envVar
 	}
 }
 

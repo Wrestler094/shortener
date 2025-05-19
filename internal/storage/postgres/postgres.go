@@ -195,6 +195,23 @@ func (ps *PostgresStorage) FindShortByOriginalURL(ctx context.Context, originalU
 	return short, nil
 }
 
+// GetStats возвращает статистику по хранилищу URL
+// ctx - контекст запроса
+// Возвращает:
+// - количество активных (не удаленных) URL
+// - количество уникальных пользователей
+// - ошибку, если произошла при выполнении запросов
+func (ps *PostgresStorage) GetStats(ctx context.Context) (int, int, error) {
+	var urlCount, userCount int
+	err := ps.db.QueryRowContext(ctx, `SELECT COUNT(*) FROM urls WHERE is_deleted = false`).Scan(&urlCount)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	err = ps.db.QueryRowContext(ctx, `SELECT COUNT(DISTINCT user_id) FROM urls WHERE user_id IS NOT NULL`).Scan(&userCount)
+	return urlCount, userCount, err
+}
+
 // Ping проверяет соединение с базой данных
 // ctx - контекст для выполнения запроса
 func (ps *PostgresStorage) Ping(ctx context.Context) error {
