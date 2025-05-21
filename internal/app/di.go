@@ -14,6 +14,7 @@ import (
 	grpchandlers "github.com/Wrestler094/shortener/internal/handlers/grpc"
 	httphandlers "github.com/Wrestler094/shortener/internal/handlers/http"
 	"github.com/Wrestler094/shortener/internal/logger"
+	"github.com/Wrestler094/shortener/internal/middlewares"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/router"
 	"github.com/Wrestler094/shortener/internal/services"
@@ -71,7 +72,9 @@ func InitApp() *App {
 	r := router.InitRouter(hs)
 
 	// Инициализация gRPC-серверов
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(middlewares.NewLoggingInterceptor()),
+	)
 
 	// gRPC хендлеры
 	grpcURLHandler := grpchandlers.NewURLHandler(urlService)
