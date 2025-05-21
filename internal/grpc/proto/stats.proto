@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package shortener;
+option go_package = "github.com/Wrestler094/shortener/internal/grpc/pb;pb";
+
+import "google/protobuf/empty.proto";
+
+message StatsResponse {
+  int32 urls = 1;
+  int32 users = 2;
+}
+
+service StatsService {
+  rpc GetStats(google.protobuf.Empty) returns (StatsResponse);
+}

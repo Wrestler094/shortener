@@ -6,10 +6,13 @@ import (
 	"time"
 
 	"go.uber.org/zap"
+	"google.golang.org/grpc"
 
 	"github.com/Wrestler094/shortener/internal/configs"
 	"github.com/Wrestler094/shortener/internal/deleter"
-	"github.com/Wrestler094/shortener/internal/handlers"
+	"github.com/Wrestler094/shortener/internal/grpc/pb"
+	grpchandlers "github.com/Wrestler094/shortener/internal/handlers/grpc"
+	httphandlers "github.com/Wrestler094/shortener/internal/handlers/http"
 	"github.com/Wrestler094/shortener/internal/logger"
 	"github.com/Wrestler094/shortener/internal/persistence"
 	"github.com/Wrestler094/shortener/internal/router"
@@ -21,9 +24,10 @@ import (
 
 // App представляет основную структуру приложения
 type App struct {
-	Router  http.Handler     // HTTP-роутер приложения
-	Storage storage.IStorage // Хранилище для работы с URL
-	Deleter deleter.Deleter  // Компонент для асинхронного удаления URL
+	Router     http.Handler     // HTTP-роутер приложения
+	Storage    storage.IStorage // Хранилище для работы с URL
+	Deleter    deleter.Deleter  // Компонент для асинхронного удаления URL
+	GRPCServer *grpc.Server     // добавим gRPC-сервер
 }
 
 // InitApp инициализирует приложение, создавая все необходимые зависимости:
@@ -55,15 +59,34 @@ func InitApp() *App {
 	// Инициализация сервисов
 	urlService := services.NewURLService(store, fileStorage, urlDeleter)
 	statsService := services.NewStatsService(store)
+	pingService := services.NewPingService(store)
 
 	// Инициализация хендлеров
-	urlHandler := handlers.NewURLHandler(urlService)
-	pingHandler := handlers.NewPingHandler(store)
-	statsHandler := handlers.NewStatsHandler(statsService)
+	urlHandler := httphandlers.NewURLHandler(urlService)
+	pingHandler := httphandlers.NewPingHandler(pingService)
+	statsHandler := httphandlers.NewStatsHandler(statsService)
 
 	// Создание роутера
-	hs := handlers.NewHandlers(urlHandler, pingHandler, statsHandler)
+	hs := httphandlers.NewHandlers(urlHandler, pingHandler, statsHandler)
 	r := router.InitRouter(hs)
 
-	return &App{Router: r, Storage: store, Deleter: urlDeleter}
+	// Инициализация gRPC-серверов
+	grpcServer := grpc.NewServer()
+
+	// gRPC хендлеры
+	grpcURLHandler := grpchandlers.NewURLHandler(urlService)
+	grpcStatsHandler := grpchandlers.NewStatsHandler(statsService)
+	grpcPingHandler := grpchandlers.NewPingHandler(pingService)
+
+	// Регистрация gRPC сервисов
+	pb.RegisterURLServiceServer(grpcServer, grpcURLHandler)
+	pb.RegisterStatsServiceServer(grpcServer, grpcStatsHandler)
+	pb.RegisterPingServiceServer(grpcServer, grpcPingHandler)
+
+	return &App{
+		Router:     r,
+		Storage:    store,
+		Deleter:    urlDeleter,
+		GRPCServer: grpcServer,
+	}
 }
