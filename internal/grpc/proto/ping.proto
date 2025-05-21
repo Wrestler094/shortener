@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package shortener;
+option go_package = "github.com/Wrestler094/shortener/internal/grpc/pb;pb";
+
+import "google/protobuf/empty.proto";
+
+service PingService {
+  rpc Ping(google.protobuf.Empty) returns (google.protobuf.Empty);
+}

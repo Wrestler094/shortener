@@ -37,6 +37,8 @@ var (
 	LoggerLevel = "info"
 	// HTTPSPort - стандартный порт для HTTPS соединений
 	HTTPSPort = 8443
+	// GRPCAddr = стандартный GRPC порт
+	GRPCPort = 9090
 )
 
 // Config представляет структуру конфигурации приложения

@@ -7,6 +7,11 @@ ENTRY = ./cmd/shortener/main.go
 # Импорт-префикс вашего проекта для -local
 LOCAL_MODULE = github.com/Wrestler094/shortener
 
+# Директория с исходными .proto файлами
+PROTO_SRC_DIR := internal/grpc/proto
+# Директория, куда будут сгенерированы Go файлы из .proto файлов
+PROTO_OUT_DIR := internal/grpc/pb
+
 # Параметры сборки
 VERSION ?= $(shell git describe --tags --always --dirty)
 DATE    ?= $(shell date +%Y-%m-%dT%H:%M:%S)
@@ -42,6 +47,18 @@ imports:
 # Запуск всех тестов
 test:
 	@go test -v ./...
+
+# Генерация Go-кода из proto-файлов
+# Требует установленного protoc и go-grpc плагина
+proto:
+	@mkdir -p $(PROTO_OUT_DIR)
+	@protoc \
+		--go_out=$(PROTO_OUT_DIR) \
+		--go-grpc_out=$(PROTO_OUT_DIR) \
+		--go_opt=paths=source_relative \
+		--go-grpc_opt=paths=source_relative \
+		--proto_path=$(PROTO_SRC_DIR) \
+		$(PROTO_SRC_DIR)/*.proto
 
 # Очистка go модулей и зависимостей
 tidy:

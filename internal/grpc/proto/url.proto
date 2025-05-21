@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package shortener;
+
+option go_package = "github.com/Wrestler094/shortener/internal/grpc/pb;pb";
+
+// URLService определяет методы для управления URL.
+service URLService {
+  // Сократить URL
+  rpc ShortenURL(ShortenRequest) returns (ShortenResponse);
+
+  // Получить оригинальный URL по shortID
+  rpc GetOriginalURL(URLRequest) returns (URLResponse);
+
+  // Удалить список URL пользователя
+  rpc DeleteUserURLs(DeleteRequest) returns (DeleteResponse);
+
+  // Получить все URL пользователя
+  rpc GetUserURLs(UserRequest) returns (UserURLsResponse);
+
+  // Сократить список URL (batch)
+  rpc SaveBatch(BatchRequest) returns (BatchResponse);
+}
+
+// Запрос на сокращение одного URL
+message ShortenRequest {
+  string url = 1;
+  string user_id = 2;
+}
+
+// Ответ на сокращение одного URL
+message ShortenResponse {
+  string short_url = 1;
+}
+
+// Запрос на получение оригинального URL
+message URLRequest {
+  string short_url = 1;
+}
+
+// Ответ с оригинальным URL и флагом удаления
+message URLResponse {
+  string original_url = 1;
+  bool is_deleted = 2;
+}
+
+// Запрос на удаление URL пользователя
+message DeleteRequest {
+  repeated string short_urls = 1;
+  string user_id = 2;
+}
+
+// Ответ об успешности удаления
+message DeleteResponse {
+  bool success = 1;
+}
+
+// Запрос на получение всех URL пользователя
+message UserRequest {
+  string user_id = 1;
+}
+
+// Элемент из списка URL пользователя
+message UserURLItem {
+  string short_url = 1;
+  string original_url = 2;
+}
+
+// Ответ со списком URL
+message UserURLsResponse {
+  repeated UserURLItem urls = 1;
+}
+
+// ======= Batch-сокращение =======
+
+// Запрос на batch-сокращение URL
+message BatchRequestItem {
+  string correlation_id = 1;
+  string original_url = 2;
+}
+
+message BatchRequest {
+  string user_id = 1;
+  repeated BatchRequestItem urls = 2;
+}
+
+// Ответ с batch-сокращёнными URL
+message BatchResponseItem {
+  string correlation_id = 1;
+  string short_url = 2;
+}
+
+message BatchResponse {
+  repeated BatchResponseItem urls = 1;
+}

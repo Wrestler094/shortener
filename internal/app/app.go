@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"os/signal"
@@ -68,6 +69,20 @@ func Run() {
 		}
 	}()
 
+	grpcAddr := fmt.Sprintf(":%d", configs.GRPCPort)
+	grpcListener, err := net.Listen("tcp", grpcAddr)
+	if err != nil {
+		logger.Log.Fatal("Failed to start gRPC listener", zap.Error(err))
+	}
+
+	// Запуск gRPC в отдельной горутине
+	go func() {
+		logger.Log.Info("gRPC server running", zap.String("addr", grpcAddr))
+		if err := app.GRPCServer.Serve(grpcListener); err != nil {
+			logger.Log.Fatal("gRPC server crashed", zap.Error(err))
+		}
+	}()
+
 	// Ожидаем сигнал завершения
 	<-stop
 	logger.Log.Info("Shutdown signal received")
@@ -81,6 +96,9 @@ func Run() {
 	if err := server.Shutdown(ctx); err != nil {
 		logger.Log.Error("Graceful shutdown failed", zap.Error(err))
 	}
+
+	// Завершаем gRPC-сервер
+	app.GRPCServer.GracefulStop()
 
 	// Закрываем БД (если есть метод Close)
 	if closer, ok := app.Storage.(storage.IClosableStorage); ok {

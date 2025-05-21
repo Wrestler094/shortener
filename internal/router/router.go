@@ -5,7 +5,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	httpSwagger "github.com/swaggo/http-swagger"
 
-	"github.com/Wrestler094/shortener/internal/handlers"
+	httphandlers "github.com/Wrestler094/shortener/internal/handlers/http"
 	"github.com/Wrestler094/shortener/internal/middlewares"
 )
 
@@ -29,7 +29,7 @@ import (
 // - Compressor - сжатие ответов
 // - AuthCookieSetter - установка cookie для аутентификации
 // - Recoverer - восстановление после паники
-func InitRouter(handlers *handlers.Handlers) *chi.Mux {
+func InitRouter(httphandlers *httphandlers.Handlers) *chi.Mux {
 	r := chi.NewRouter()
 
 	r.Use(middlewares.RequestLogger)
@@ -37,17 +37,17 @@ func InitRouter(handlers *handlers.Handlers) *chi.Mux {
 	r.Use(middlewares.AuthCookieSetter)
 	r.Use(middleware.Recoverer)
 
-	r.Post("/", handlers.URLHandler.SavePlainURL)
-	r.Get("/{id}", handlers.URLHandler.GetURL)
-	r.Get("/ping", handlers.PingHandler.Ping)
+	r.Post("/", httphandlers.URLHandler.SavePlainURL)
+	r.Get("/{id}", httphandlers.URLHandler.GetURL)
+	r.Get("/ping", httphandlers.PingHandler.Ping)
 
-	r.Post("/api/shorten", handlers.URLHandler.SaveJSONURL)
-	r.Post("/api/shorten/batch", handlers.URLHandler.SaveBatchURLs)
+	r.Post("/api/shorten", httphandlers.URLHandler.SaveJSONURL)
+	r.Post("/api/shorten/batch", httphandlers.URLHandler.SaveBatchURLs)
 
-	r.Get("/api/user/urls", handlers.URLHandler.GetUserURLs)
-	r.Delete("/api/user/urls", handlers.URLHandler.DeleteUserURLs)
+	r.Get("/api/user/urls", httphandlers.URLHandler.GetUserURLs)
+	r.Delete("/api/user/urls", httphandlers.URLHandler.DeleteUserURLs)
 
-	r.Get("/api/internal/stats", handlers.StatsHandler.GetStats)
+	r.Get("/api/internal/stats", httphandlers.StatsHandler.GetStats)
 
 	r.Get("/swagger/*", httpSwagger.Handler(
 		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
